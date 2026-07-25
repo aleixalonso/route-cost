@@ -1,0 +1,21 @@
+{
+  "edges": [
+    {
+      "length": 10,
+      "speed": 95,
+      "speed_limit": 120,
+      "road_class": "motorway",
+      "use": "road",
+      "toll": false,
+      "unpaved": false,
+      "surface": "paved_smooth",
+      "density": 2,
+      "weighted_grade": 0.1,
+      "max_upward_grade": 2,
+      "max_downward_grade": -2,
+      "mean_elevation": 120,
+      "begin_shape_index": 0,
+      "end_shape_index": 20
+    }
+  ]
+}

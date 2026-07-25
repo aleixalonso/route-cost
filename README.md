@@ -2,7 +2,7 @@
 
 RouteCost estimates the real cost of a vehicle route using route characteristics and vehicle-specific consumption data.
 
-This repository is in its initial development phase. It contains a portable monorepo foundation and one minimal health-check vertical slice.
+This repository is in its initial development phase. It contains a portable monorepo foundation, health checks, and the initial routing-provider slice.
 
 ## Requirements
 
@@ -32,6 +32,7 @@ pnpm dev
 - `pnpm dev`: run web, API, and watch builds through Turborepo
 - `pnpm check`: format check, lint, typecheck, coverage tests, and build
 - `pnpm test`, `pnpm test:coverage`, `pnpm test:integration`, `pnpm test:e2e`: run test layers
+- `pnpm routing:verify`: manually verify the live Valhalla integration when `VALHALLA_API_KEY` is set
 - `pnpm docker:up`, `pnpm docker:smoke`, `pnpm docker:down`: build, smoke-test, and stop Compose
 
 ## Structure
@@ -65,7 +66,26 @@ The Docker web app is exposed at http://localhost:8080 and proxies `/api/` to th
 
 ## Environment Variables
 
-`pnpm setup` copies `.env.example` files only when a local `.env` does not already exist. The initial mock routing provider requires no API keys.
+`pnpm setup` copies `.env.example` files only when a local `.env` does not already exist.
+
+The mock provider is the default and requires no network access:
+
+```dotenv
+ROUTING_PROVIDER=mock
+```
+
+The Valhalla provider uses Stadia Maps EU and requires server-side credentials:
+
+```dotenv
+ROUTING_PROVIDER=valhalla
+VALHALLA_API_KEY=<key>
+```
+
+Automated tests never call the live provider. The only live API check introduced by this repository is manual:
+
+```bash
+ROUTING_PROVIDER=valhalla VALHALLA_API_KEY=<key> pnpm routing:verify
+```
 
 ## Architecture
 

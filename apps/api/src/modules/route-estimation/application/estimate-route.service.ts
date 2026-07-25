@@ -3,9 +3,10 @@ import type {
   EstimateRouteRequest,
   EstimateRouteResponse,
 } from '@route-cost/contracts';
-import { calculateFuelCost } from '@route-cost/domain';
-import type { RoutingProvider } from '@route-cost/routing';
-import { getVehicleById } from '@route-cost/vehicle-data';
+import {
+  type RoutingProvider,
+  summarizeRouteDistances,
+} from '@route-cost/routing';
 
 import { ROUTING_PROVIDER } from './routing-provider.token';
 
@@ -19,29 +20,20 @@ export class EstimateRouteService {
   public async estimate(
     request: EstimateRouteRequest,
   ): Promise<EstimateRouteResponse> {
-    const vehicle = getVehicleById(request.vehicleId);
     const routes = await this.routingProvider.calculateRoutes({
       origin: request.origin,
       destination: request.destination,
+      vehicleCategory: request.vehicleCategory,
+      ...(request.alternatives === undefined
+        ? {}
+        : { alternatives: request.alternatives }),
     });
-    const route = routes.alternatives[0];
-
-    if (!vehicle || !route) {
-      return {
-        distanceKm: 0,
-        durationSeconds: 0,
-        estimatedCost: 0,
-      };
-    }
 
     return {
-      distanceKm: route.distanceKm,
-      durationSeconds: route.durationSeconds,
-      estimatedCost: calculateFuelCost({
-        distanceKm: route.distanceKm,
-        litresPer100Km: vehicle.litresPer100Km,
-        pricePerLitre: 1.75,
-      }).estimatedCost,
+      alternatives: routes.alternatives.map((alternative) => ({
+        ...alternative,
+        summary: summarizeRouteDistances(alternative.segments),
+      })),
     };
   }
 }

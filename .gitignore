@@ -8,6 +8,7 @@ test-results/
 .env.*
 !.env.example
 *.log
+.valhalla-debug/
 .DS_Store
 **/src/**/*.js
 **/src/**/*.js.map

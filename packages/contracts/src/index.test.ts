@@ -20,7 +20,17 @@ describe('contracts', () => {
       estimateRouteRequestSchema.parse({
         origin: { latitude: 100, longitude: 2 },
         destination: { latitude: 41, longitude: 2 },
-        vehicleId: 'compact-petrol',
+        vehicleCategory: 'car',
+      }),
+    ).toThrow();
+  });
+
+  it('rejects identical route coordinates', () => {
+    expect(() =>
+      estimateRouteRequestSchema.parse({
+        origin: { latitude: 41, longitude: 2 },
+        destination: { latitude: 41, longitude: 2 },
+        vehicleCategory: 'car',
       }),
     ).toThrow();
   });

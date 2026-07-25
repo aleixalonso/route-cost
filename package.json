@@ -21,6 +21,7 @@
     "test:coverage": "turbo test:coverage --filter=!@route-cost/e2e",
     "test:integration": "turbo test:integration",
     "test:e2e": "turbo test:e2e",
+    "routing:verify": "tsx scripts/verify-valhalla-routing.mts",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build",
     "setup": "node scripts/setup.mjs",
     "docker:build": "docker compose build",
@@ -57,6 +58,7 @@
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "syncpack": "^15.3.2",
+    "tsx": "^4.23.1",
     "turbo": "^2.10.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0"

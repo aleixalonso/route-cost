@@ -7,23 +7,40 @@ import type {
 
 @Injectable()
 export class MockRoutingProvider implements RoutingProvider {
-  public calculateRoutes(_request: RoutingRequest): Promise<RoutingResult> {
+  public calculateRoutes(request: RoutingRequest): Promise<RoutingResult> {
     return Promise.resolve({
       alternatives: [
         {
-          id: 'mock-primary',
-          distanceKm: 12.5,
+          id: 'primary',
+          distanceMetres: 12_500,
           durationSeconds: 1320,
+          encodedPolyline: 'mock-polyline',
           segments: [
             {
-              distanceKm: 7.5,
-              durationSeconds: 720,
+              distanceMetres: 7_500,
+              beginShapeIndex: 0,
+              endShapeIndex: 12,
               roadCategory: 'urban',
+              classificationReason: 'urban-density',
+              roadClass: 'primary',
+              density: 9,
             },
             {
-              distanceKm: 5,
-              durationSeconds: 600,
-              roadCategory: 'primary',
+              distanceMetres: 5_000,
+              beginShapeIndex: 13,
+              endShapeIndex: 20,
+              roadCategory:
+                request.vehicleCategory === 'low-speed-scooter'
+                  ? 'interurban'
+                  : 'motorway',
+              classificationReason:
+                request.vehicleCategory === 'low-speed-scooter'
+                  ? 'interurban-road-class'
+                  : 'road-class-motorway',
+              roadClass:
+                request.vehicleCategory === 'low-speed-scooter'
+                  ? 'secondary'
+                  : 'motorway',
             },
           ],
         },

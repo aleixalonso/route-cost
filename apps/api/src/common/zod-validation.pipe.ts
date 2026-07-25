@@ -9,6 +9,7 @@ export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
     const result = this.schema.safeParse(value);
     if (!result.success) {
       throw new BadRequestException({
+        code: 'INVALID_ROUTE_REQUEST',
         message: 'Validation failed',
         issues: result.error.issues,
       });

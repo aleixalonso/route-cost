@@ -1,0 +1,41 @@
+{
+  "trip": {
+    "summary": {
+      "length": 10,
+      "time": 600
+    },
+    "legs": [
+      {
+        "shape": "encoded-primary"
+      }
+    ]
+  },
+  "alternates": [
+    {
+      "trip": {
+        "summary": {
+          "length": 11,
+          "time": 660
+        },
+        "legs": [
+          {
+            "shape": "encoded-alternative-1"
+          }
+        ]
+      }
+    },
+    {
+      "trip": {
+        "summary": {
+          "length": 12,
+          "time": 720
+        },
+        "legs": [
+          {
+            "shape": "encoded-alternative-2"
+          }
+        ]
+      }
+    }
+  ]
+}

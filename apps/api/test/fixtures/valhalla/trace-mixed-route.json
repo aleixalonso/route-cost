@@ -1,0 +1,55 @@
+{
+  "edges": [
+    {
+      "length": 2,
+      "speed": 30,
+      "speed_limit": 30,
+      "road_class": "primary",
+      "use": "road",
+      "toll": false,
+      "unpaved": false,
+      "surface": "paved_smooth",
+      "density": 9,
+      "weighted_grade": 0,
+      "max_upward_grade": 1,
+      "max_downward_grade": -1,
+      "mean_elevation": 20,
+      "begin_shape_index": 0,
+      "end_shape_index": 5
+    },
+    {
+      "length": 3,
+      "speed": 80,
+      "speed_limit": 90,
+      "road_class": "secondary",
+      "use": "road",
+      "toll": false,
+      "unpaved": false,
+      "surface": "paved_smooth",
+      "density": 3,
+      "weighted_grade": 0,
+      "max_upward_grade": 1,
+      "max_downward_grade": -1,
+      "mean_elevation": 30,
+      "begin_shape_index": 6,
+      "end_shape_index": 12
+    },
+    {
+      "length": 5,
+      "speed": 100,
+      "speed_limit": 120,
+      "road_class": "motorway",
+      "use": "road",
+      "toll": true,
+      "unpaved": false,
+      "surface": "paved_smooth",
+      "density": 4,
+      "weighted_grade": 0,
+      "max_upward_grade": 1,
+      "max_downward_grade": -1,
+      "mean_elevation": 40,
+      "begin_shape_index": 13,
+      "end_shape_index": 20
+    }
+  ]
+}

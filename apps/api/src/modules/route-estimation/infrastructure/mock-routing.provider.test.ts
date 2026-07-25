@@ -8,9 +8,10 @@ describe('MockRoutingProvider', () => {
       new MockRoutingProvider().calculateRoutes({
         origin: { latitude: 41.38, longitude: 2.17 },
         destination: { latitude: 41.4, longitude: 2.19 },
+        vehicleCategory: 'car',
       }),
     ).resolves.toMatchObject({
-      alternatives: [{ id: 'mock-primary', distanceKm: 12.5 }],
+      alternatives: [{ id: 'primary', distanceMetres: 12_500 }],
     });
   });
 });
