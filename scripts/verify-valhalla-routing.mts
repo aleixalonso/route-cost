@@ -1,12 +1,29 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { summarizeRouteDistances } from '@route-cost/routing';
-
-import { ValhallaHttpClient } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-http.client';
-import { ValhallaRoutingProvider } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-routing.provider';
-import type { ValhallaConfig } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla.types';
-import type { VehicleRoutingCategory } from '../packages/routing/src/index';
+import {
+  getValhallaRouteShapes,
+  normalizeValhallaRoutes,
+} from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-normalizer';
+import {
+  buildValhallaRouteRequest,
+  buildValhallaTraceAttributesRequest,
+} from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-request.builder';
+import { valhallaRouteResponseSchema } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-route.schema';
+import { valhallaTraceAttributesResponseSchema } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-trace-attributes.schema';
+import type {
+  ValhallaConfig,
+  ValhallaRouteResponse,
+  ValhallaTraceAttributesResponse,
+} from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla.types';
+import {
+  resolveRoutingProfile,
+  summarizeRouteDistances,
+  type RoutingRequest,
+  type RoutingResult,
+  type VehicleRoutingCategory,
+} from '../packages/routing/src/index';
+import type { ZodSchema } from 'zod';
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -27,11 +44,7 @@ async function main(): Promise<void> {
     requestTimeoutMs: Number(process.env.VALHALLA_REQUEST_TIMEOUT_MS ?? 8_000),
     maxAlternatives: Number(process.env.VALHALLA_MAX_ALTERNATIVES ?? 2),
   };
-  const provider = new ValhallaRoutingProvider(
-    new DebuggableValhallaHttpClient(config, args.debug),
-    config,
-  );
-  const result = await provider.calculateRoutes({
+  const result = await calculateRoutes(config, args.debug, {
     origin: args.origin ?? { latitude: 41.3902, longitude: 2.154 },
     destination: args.destination ?? { latitude: 41.5912, longitude: 1.5209 },
     vehicleCategory: args.vehicleCategory ?? 'maxi-scooter',
@@ -64,37 +77,97 @@ async function main(): Promise<void> {
   }
 }
 
-class DebuggableValhallaHttpClient extends ValhallaHttpClient {
-  public constructor(
-    config: ValhallaConfig,
-    private readonly debug: boolean,
-  ) {
-    super(config);
-  }
+async function calculateRoutes(
+  config: ValhallaConfig,
+  debug: boolean,
+  request: RoutingRequest,
+): Promise<RoutingResult> {
+  const profile = resolveRoutingProfile(request.vehicleCategory);
+  const routeResponse = await postValhalla(
+    config,
+    debug,
+    config.routePath,
+    buildValhallaRouteRequest(request, profile, config),
+    valhallaRouteResponseSchema,
+  );
+  const traceResponses = await Promise.all(
+    getValhallaRouteShapes(routeResponse).map((shape) =>
+      postValhalla(
+        config,
+        debug,
+        config.traceAttributesPath,
+        buildValhallaTraceAttributesRequest(shape, profile),
+        valhallaTraceAttributesResponseSchema,
+      ),
+    ),
+  );
 
-  public override async post<T>(
-    path: string,
-    body: unknown,
-    responseSchema: Parameters<ValhallaHttpClient['post']>[2],
-  ): Promise<T> {
-    const response = await super.post<T>(path, body, responseSchema);
+  return normalizeValhallaRoutes(routeResponse, traceResponses);
+}
 
-    if (this.debug) {
-      const outputDirectory = join(
-        process.cwd(),
-        '.valhalla-debug',
-        String(Date.now()),
-      );
-      await mkdir(outputDirectory, { recursive: true });
-      await writeFile(
-        join(outputDirectory, sanitizeFilename(path)),
-        JSON.stringify(response, null, 2),
-      );
-      console.log(`Debug response saved in ${outputDirectory}`);
+async function postValhalla<T>(
+  config: ValhallaConfig,
+  debug: boolean,
+  path: string,
+  body: unknown,
+  responseSchema: ZodSchema<T>,
+): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), config.requestTimeoutMs);
+
+  try {
+    const response = await fetch(new URL(path, config.baseUrl), {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Stadia-Auth ${config.apiKey}`,
+        'Content-Type': 'application/json',
+        'X-Client-Id': config.clientId,
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    const json = await readJson(response);
+
+    if (debug) {
+      await writeDebugResponse(path, json);
     }
 
-    return response;
+    if (!response.ok) {
+      throw new Error(
+        `Valhalla request failed with status ${response.status}.`,
+      );
+    }
+
+    return responseSchema.parse(json);
+  } finally {
+    clearTimeout(timeout);
   }
+}
+
+async function readJson(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    throw new Error('Valhalla returned malformed JSON.');
+  }
+}
+
+async function writeDebugResponse(
+  path: string,
+  response: unknown,
+): Promise<void> {
+  const outputDirectory = join(
+    process.cwd(),
+    '.valhalla-debug',
+    String(Date.now()),
+  );
+  await mkdir(outputDirectory, { recursive: true });
+  await writeFile(
+    join(outputDirectory, sanitizeFilename(path)),
+    JSON.stringify(response, null, 2),
+  );
+  console.log(`Debug response saved in ${outputDirectory}`);
 }
 
 function parseArgs(argv: string[]): {

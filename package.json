@@ -21,7 +21,7 @@
     "test:coverage": "turbo test:coverage --filter=!@route-cost/e2e",
     "test:integration": "turbo test:integration",
     "test:e2e": "turbo test:e2e",
-    "routing:verify": "tsx scripts/verify-valhalla-routing.mts",
+    "routing:verify": "tsx --tsconfig scripts/tsconfig.verify.json scripts/verify-valhalla-routing.mts",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build",
     "setup": "node scripts/setup.mjs",
     "docker:build": "docker compose build",
