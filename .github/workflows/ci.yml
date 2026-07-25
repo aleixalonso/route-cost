@@ -18,11 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - run: corepack enable
+      - run: corepack prepare pnpm@10.34.3 --activate
       - uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check
       - run: pnpm lint

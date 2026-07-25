@@ -21,11 +21,12 @@ jobs:
       CI: true
     steps:
       - uses: actions/checkout@v6
+      - run: corepack enable
+      - run: corepack prepare pnpm@10.34.3 --activate
       - uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @route-cost/e2e exec playwright install --with-deps chromium
       - run: pnpm test:e2e
