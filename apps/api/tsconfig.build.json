@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": {
+      "@route-cost/contracts": ["../../packages/contracts/dist/index.d.ts"],
+      "@route-cost/domain": ["../../packages/domain/dist/index.d.ts"],
+      "@route-cost/routing": ["../../packages/routing/dist/index.d.ts"],
+      "@route-cost/vehicle-data": [
+        "../../packages/vehicle-data/dist/index.d.ts"
+      ]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["test", "dist", "coverage", "**/*.test.ts", "**/*.spec.ts"]
+}

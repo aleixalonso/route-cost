@@ -1,0 +1,64 @@
+{
+  "name": "route-cost",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.34.3",
+  "engines": {
+    "node": "24.14.1",
+    "pnpm": "10.34.3"
+  },
+  "scripts": {
+    "dev": "turbo dev --filter=!@route-cost/e2e",
+    "build": "turbo build",
+    "clean": "turbo clean && node -e \"const fs=require('fs'); for (const p of ['node_modules']) fs.rmSync(p,{recursive:true,force:true});\"",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test --filter=!@route-cost/e2e",
+    "test:watch": "turbo test:watch",
+    "test:coverage": "turbo test:coverage --filter=!@route-cost/e2e",
+    "test:integration": "turbo test:integration",
+    "test:e2e": "turbo test:e2e",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build",
+    "setup": "node scripts/setup.mjs",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down --remove-orphans",
+    "docker:smoke": "node scripts/smoke-test.mjs",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mts,cts,js,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,yaml,yml,md,css,html}": [
+      "prettier --write"
+    ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
+    "globals": "^17.7.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.2.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "syncpack": "^15.3.2",
+    "turbo": "^2.10.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0"
+  }
+}

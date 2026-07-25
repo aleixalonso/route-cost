@@ -1,0 +1,12 @@
+{
+  "extends": "../../packages/typescript-config/react.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@route-cost/contracts": ["../../packages/contracts/src/index.ts"],
+      "@route-cost/domain": ["../../packages/domain/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "vitest.config.ts"]
+}

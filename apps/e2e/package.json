@@ -1,0 +1,24 @@
+{
+  "name": "@route-cost/e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "playwright test --ui",
+    "build": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:watch": "playwright test --ui",
+    "test:e2e": "playwright test",
+    "test:coverage": "playwright test",
+    "clean": "node -e \"require('fs').rmSync('playwright-report',{recursive:true,force:true}); require('fs').rmSync('test-results',{recursive:true,force:true});\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@route-cost/typescript-config": "workspace:*",
+    "@types/node": "^26.1.1",
+    "typescript": "^6.0.3"
+  }
+}

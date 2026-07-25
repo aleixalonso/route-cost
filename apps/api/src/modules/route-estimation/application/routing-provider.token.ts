@@ -1,0 +1,1 @@
+export const ROUTING_PROVIDER = Symbol('ROUTING_PROVIDER');
