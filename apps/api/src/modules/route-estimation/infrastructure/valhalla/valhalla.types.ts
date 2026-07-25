@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { RoutingProfile } from '@route-cost/routing';
 
 import type { Environment } from '../../../../config/environment';
 import type { valhallaRouteResponseSchema } from './valhalla-route.schema';
@@ -22,27 +23,54 @@ export type ValhallaTraceAttributesResponse = z.infer<
   typeof valhallaTraceAttributesResponseSchema
 >;
 
+export type ValhallaTraceAttribute =
+  | 'edge.length'
+  | 'edge.speed'
+  | 'edge.speed_limit'
+  | 'edge.road_class'
+  | 'edge.use'
+  | 'edge.toll'
+  | 'edge.unpaved'
+  | 'edge.surface'
+  | 'edge.density'
+  | 'edge.weighted_grade'
+  | 'edge.max_upward_grade'
+  | 'edge.max_downward_grade'
+  | 'edge.mean_elevation'
+  | 'edge.begin_shape_index'
+  | 'edge.end_shape_index';
+
+export interface ValhallaCostingOptions {
+  motorcycle?: {
+    use_unpaved: number;
+  };
+  motor_scooter?: {
+    top_speed: number;
+    use_highways: number;
+  };
+}
+
 export interface ValhallaRouteRequest {
   locations: readonly [
     { lat: number; lon: number },
     { lat: number; lon: number },
   ];
-  costing: string;
+  costing: RoutingProfile;
   units: 'kilometers';
   directions_type: 'none';
   alternates?: number;
-  costing_options?: Record<string, Record<string, number | boolean | string>>;
+  costing_options?: ValhallaCostingOptions;
 }
 
 export interface ValhallaTraceAttributesRequest {
   encoded_polyline: string;
-  costing: string;
+  costing: RoutingProfile;
   shape_match: 'edge_walk';
   filters: {
     action: 'include';
-    attributes: readonly string[];
+    attributes: readonly ValhallaTraceAttribute[];
   };
-  costing_options?: Record<string, Record<string, number | boolean | string>>;
+  costing_options?: ValhallaCostingOptions;
 }
 
 export function toValhallaConfig(environment: Environment): ValhallaConfig {

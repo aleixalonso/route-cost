@@ -4,6 +4,7 @@ import { ValhallaInvalidResponseError } from './valhalla.errors';
 import type {
   ValhallaConfig,
   ValhallaRouteRequest,
+  ValhallaTraceAttribute,
   ValhallaTraceAttributesRequest,
 } from './valhalla.types';
 
@@ -23,7 +24,7 @@ export const traceAttributeFilter = [
   'edge.mean_elevation',
   'edge.begin_shape_index',
   'edge.end_shape_index',
-] as const;
+] as const satisfies readonly ValhallaTraceAttribute[];
 
 export function buildValhallaRouteRequest(
   request: RoutingRequest,
