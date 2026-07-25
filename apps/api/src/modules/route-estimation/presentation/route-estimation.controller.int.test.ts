@@ -174,7 +174,7 @@ function useValhallaEnvironment(): void {
 
 async function createTestApp(): Promise<NestFastifyApplication> {
   vi.resetModules();
-  const appModule = await import('../../../create-app');
+  const appModule = await import('../../../create-app.js');
   return appModule.createApp();
 }
 

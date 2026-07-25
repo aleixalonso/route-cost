@@ -208,11 +208,6 @@ describe('routing provider errors', () => {
       'Routing provider rate limit exceeded.',
     ],
     [
-      RoutingProviderTimeoutError,
-      'RoutingProviderTimeoutError',
-      'Routing provider request timed out.',
-    ],
-    [
       RoutingProviderUnavailableError,
       'RoutingProviderUnavailableError',
       'Routing provider is unavailable.',
@@ -237,15 +232,28 @@ describe('routing provider errors', () => {
     expect(error.name).toBe(name);
     expect(error.message).toBe(message);
     expect(error).toMatchObject({
+      status: 503,
       providerRequestId: 'request-id',
       providerErrorCode: 'provider-code',
     });
+  });
 
-    if (error instanceof RoutingProviderTimeoutError) {
-      expect('status' in error).toBe(false);
-    } else {
-      expect(error).toMatchObject({ status: 503 });
-    }
+  it('creates timeout errors without HTTP status metadata', () => {
+    const error = new RoutingProviderTimeoutError(
+      'Routing provider request timed out.',
+      {
+        providerRequestId: 'request-id',
+        providerErrorCode: 'provider-code',
+      },
+    );
+
+    expect(error.name).toBe('RoutingProviderTimeoutError');
+    expect(error.message).toBe('Routing provider request timed out.');
+    expect(error).toMatchObject({
+      providerRequestId: 'request-id',
+      providerErrorCode: 'provider-code',
+    });
+    expect('status' in error).toBe(false);
   });
 });
 
