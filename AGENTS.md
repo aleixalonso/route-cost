@@ -48,6 +48,16 @@ Use relative imports within a workspace. Do not introduce broad aliases such as 
 
 - TypeScript only.
 - No `any` unless unavoidable and justified near the integration boundary.
+- Prefer precise domain types over primitive obsession for closed sets. Use string-literal unions or enum-like `as const` objects for serialized values; use TypeScript `enum` only when its runtime object and nominal typing are explicitly useful.
+- Do not widen known values to `string`, `number`, or `boolean` after validation. Preserve narrow types from Zod schemas, constants, and resolvers.
+- Use `unknown` at untrusted boundaries, then validate or narrow immediately. Do not cast untrusted input directly into application types.
+- Avoid type assertions. If one is necessary, keep it local, explain why the compiler cannot know the invariant, and add a test around the boundary.
+- Keep optional fields truly optional. With `exactOptionalPropertyTypes`, omit absent values instead of assigning `undefined`.
+- Use exhaustive checks for closed unions in branching logic. Adding a union member should create a compile error until every resolver/classifier/mapper is updated.
+- Do not use non-null assertions (`!`) to silence uncertainty. Prove presence with validation, control flow, or an explicit invariant check.
+- Do not introduce ambient globals, broad module declarations, or `skipLibCheck` workarounds to hide typing problems.
+- Keep runtime validation and static types paired. Zod schemas should be the source of truth for HTTP/env/provider payloads; inferred types should flow from those schemas where practical.
+- Parse and normalize external data at the boundary. Internal packages should not receive raw provider payloads, raw request bodies, or loosely typed JSON.
 - No business logic in controllers.
 - No HTTP calls in `packages/domain`.
 - No direct `process.env` reads outside the API configuration module or web environment validation module.
@@ -68,8 +78,22 @@ Use relative imports within a workspace. Do not introduce broad aliases such as 
 ## Backend Standards
 
 - Keep app creation in `create-app.ts`; keep port listening in `main.ts`.
+- Keep NestJS modules thin. Modules wire dependencies; they should not contain selection logic beyond provider registration factories.
+- Controllers validate transport input, call application services, and map responses. They must not contain provider-specific logic, domain calculations, or direct environment access.
+- Application services depend on ports/tokens, not concrete infrastructure classes. Concrete adapters belong in infrastructure and are selected in module wiring.
+- Inject configuration through validated config objects or `ConfigService` in module/provider factories. Do not read `process.env` in services, controllers, providers, or tests except when testing configuration itself.
+- Use explicit injection tokens for ports with multiple implementations. Avoid injecting concrete adapters into use cases.
+- Keep provider SDKs, native `fetch`, response schemas, authentication, retries, and timeouts inside infrastructure adapters.
+- Map infrastructure errors to stable application-level errors before returning HTTP responses. Do not expose upstream response bodies, stack traces, credentials, or provider-specific payloads.
+- Prefer pure functions for mapping, normalization, classification, and calculation. Test them directly before testing the Nest wrapper around them.
+- Keep DTO validation in shared contracts or boundary schemas. Do not duplicate incompatible request/response shapes in controllers.
+- Do not use request-scoped providers unless there is a measured need; default to singleton providers with explicit per-request data passed as arguments.
+- Avoid lifecycle side effects in constructors. Constructors should assign dependencies only; start network listeners, timers, or expensive work explicitly in the appropriate lifecycle or command path.
+- Use `Logger` sparingly and sanitize logs. Never log secrets, authorization headers, raw provider bodies, full encoded geometry, or precise personal addresses.
 - API integration tests must use `NestFastifyApplication` and `app.inject()`.
 - Do not open real network ports in API integration tests.
+- Override providers in tests instead of reaching into private fields or relying on global mutable state.
+- Close every Nest application created in tests, even on failure paths.
 - Swagger must remain disableable through `SWAGGER_ENABLED`.
 - The mock routing provider must stay deterministic and internet-free.
 
