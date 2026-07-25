@@ -11,10 +11,20 @@ export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
       throw new BadRequestException({
         code: 'INVALID_ROUTE_REQUEST',
         message: 'Validation failed',
-        issues: result.error.issues,
+        fields: getInvalidFields(result.error.issues),
       });
     }
 
     return result.data;
   }
+}
+
+function getInvalidFields(
+  issues: readonly { path: readonly PropertyKey[] }[],
+): string[] {
+  const fields = issues.map((issue) =>
+    issue.path.length > 0 ? issue.path.map(String).join('.') : 'body',
+  );
+
+  return [...new Set(fields)];
 }

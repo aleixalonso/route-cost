@@ -1,5 +1,6 @@
-export type VehicleRoutingCategory =
-  'car' | 'motorcycle' | 'maxi-scooter' | 'low-speed-scooter';
+import type { VehicleRoutingCategory as ContractVehicleRoutingCategory } from '@route-cost/contracts';
+
+export type VehicleRoutingCategory = ContractVehicleRoutingCategory;
 
 export type RoutingProfile = 'auto' | 'motorcycle' | 'motor_scooter';
 

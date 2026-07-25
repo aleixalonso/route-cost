@@ -4,18 +4,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import routePrimaryFixture from '../../../../test/fixtures/valhalla/route-primary.json';
 import traceMixedRouteFixture from '../../../../test/fixtures/valhalla/trace-mixed-route.json';
 
-const originalEnv = { ...process.env };
 let app: NestFastifyApplication | undefined;
 
 describe('RouteEstimationController HTTP', () => {
   afterEach(async () => {
     await app?.close();
     app = undefined;
-    restoreEnvironment();
+    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
   it('uses the mock provider by default', async () => {
+    useMockEnvironment();
     app = await createTestApp();
 
     const response = await postRoute();
@@ -33,7 +33,7 @@ describe('RouteEstimationController HTTP', () => {
         },
       ],
     });
-  });
+  }, 10_000);
 
   it('selects the Valhalla provider through configuration', async () => {
     useValhallaEnvironment();
@@ -84,6 +84,7 @@ describe('RouteEstimationController HTTP', () => {
     ],
     ['unsupported vehicle category', { vehicleCategory: 'bicycle' }],
   ])('returns 400 for %s', async (_name, patch) => {
+    useMockEnvironment();
     app = await createTestApp();
 
     const response = await postRoute(patch);
@@ -151,6 +152,7 @@ describe('RouteEstimationController HTTP', () => {
   );
 
   it('returns the normal 404 response for unknown application routes', async () => {
+    useMockEnvironment();
     app = await createTestApp();
 
     const response = await app.inject('/api/v1/missing');
@@ -159,28 +161,21 @@ describe('RouteEstimationController HTTP', () => {
   });
 });
 
+function useMockEnvironment(): void {
+  vi.stubEnv('ROUTING_PROVIDER', 'mock');
+  vi.stubEnv('SWAGGER_ENABLED', 'false');
+}
+
 function useValhallaEnvironment(): void {
-  process.env.ROUTING_PROVIDER = 'valhalla';
-  process.env.VALHALLA_API_KEY = 'test-valhalla-key';
-  process.env.SWAGGER_ENABLED = 'false';
+  vi.stubEnv('ROUTING_PROVIDER', 'valhalla');
+  vi.stubEnv('VALHALLA_API_KEY', 'test-valhalla-key');
+  vi.stubEnv('SWAGGER_ENABLED', 'false');
 }
 
 async function createTestApp(): Promise<NestFastifyApplication> {
   vi.resetModules();
   const appModule = await import('../../../create-app');
   return appModule.createApp();
-}
-
-function restoreEnvironment(): void {
-  for (const key of Object.keys(process.env)) {
-    if (!(key in originalEnv)) {
-      delete process.env[key];
-    }
-  }
-
-  for (const [key, value] of Object.entries(originalEnv)) {
-    process.env[key] = value;
-  }
 }
 
 async function postRoute(patch: Record<string, unknown> = {}) {

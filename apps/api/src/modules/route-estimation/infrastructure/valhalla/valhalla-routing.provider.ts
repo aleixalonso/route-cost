@@ -1,6 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
-  resolveRoutingProfile,
   type RoutingProvider,
   type RoutingRequest,
   type RoutingResult,
@@ -8,16 +7,7 @@ import {
 
 import { VALHALLA_CONFIG, type ValhallaConfig } from './valhalla.types';
 import { ValhallaHttpClient } from './valhalla-http.client';
-import {
-  getValhallaRouteShapes,
-  normalizeValhallaRoutes,
-} from './valhalla-normalizer';
-import {
-  buildValhallaRouteRequest,
-  buildValhallaTraceAttributesRequest,
-} from './valhalla-request.builder';
-import { valhallaRouteResponseSchema } from './valhalla-route.schema';
-import { valhallaTraceAttributesResponseSchema } from './valhalla-trace-attributes.schema';
+import { calculateValhallaRoutes } from './valhalla-route-calculator';
 
 @Injectable()
 export class ValhallaRoutingProvider implements RoutingProvider {
@@ -33,7 +23,6 @@ export class ValhallaRoutingProvider implements RoutingProvider {
     request: RoutingRequest,
   ): Promise<RoutingResult> {
     const startedAt = Date.now();
-    const profile = resolveRoutingProfile(request.vehicleCategory);
 
     this.logger.log({
       event: 'routing_request_started',
@@ -43,21 +32,11 @@ export class ValhallaRoutingProvider implements RoutingProvider {
     });
 
     try {
-      const routeResponse = await this.httpClient.post(
-        this.config.routePath,
-        buildValhallaRouteRequest(request, profile, this.config),
-        valhallaRouteResponseSchema,
+      const result = await calculateValhallaRoutes(
+        request,
+        this.config,
+        this.httpClient,
       );
-      const traceResponses = await Promise.all(
-        getValhallaRouteShapes(routeResponse).map((shape) =>
-          this.httpClient.post(
-            this.config.traceAttributesPath,
-            buildValhallaTraceAttributesRequest(shape, profile),
-            valhallaTraceAttributesResponseSchema,
-          ),
-        ),
-      );
-      const result = normalizeValhallaRoutes(routeResponse, traceResponses);
 
       this.logger.log({
         event: 'routing_request_completed',
