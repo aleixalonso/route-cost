@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { coordinatesSchema } from './coordinates.schema.js';
 
+export const maxRouteAlternatives = 2;
+
 export const vehicleRoutingCategorySchema = z.enum([
   'car',
   'motorcycle',
@@ -14,7 +16,12 @@ export const estimateRouteRequestSchema = z
     origin: coordinatesSchema,
     destination: coordinatesSchema,
     vehicleCategory: vehicleRoutingCategorySchema,
-    alternatives: z.number().int().nonnegative().optional(),
+    alternatives: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(maxRouteAlternatives)
+      .optional(),
   })
   .refine(
     (request) =>

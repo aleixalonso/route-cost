@@ -3,13 +3,16 @@ import type { ZodSchema } from 'zod';
 
 @Injectable()
 export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
-  public constructor(private readonly schema: ZodSchema<T>) {}
+  public constructor(
+    private readonly schema: ZodSchema<T>,
+    private readonly errorCode = 'INVALID_ROUTE_REQUEST',
+  ) {}
 
   public transform(value: unknown): T {
     const result = this.schema.safeParse(value);
     if (!result.success) {
       throw new BadRequestException({
-        code: 'INVALID_ROUTE_REQUEST',
+        code: this.errorCode,
         message: 'Validation failed',
         fields: getInvalidFields(result.error.issues),
       });

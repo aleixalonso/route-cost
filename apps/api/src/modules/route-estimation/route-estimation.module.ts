@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import type { Environment } from '../../config/environment';
 import { EstimateRouteService } from './application/estimate-route.service';
+import { EstimateRouteCostService } from './application/estimate-route-cost.service';
 import { ROUTING_PROVIDER } from './application/routing-provider.token';
 import { MockRoutingProvider } from './infrastructure/mock-routing.provider';
 import {
@@ -11,13 +12,15 @@ import {
   ValhallaHttpClient,
   ValhallaRoutingProvider,
 } from './infrastructure/valhalla';
+import { RouteCostEstimatesController } from './presentation/route-cost-estimates.controller';
 import { RouteEstimationController } from './presentation/route-estimation.controller';
 
 @Module({
   imports: [ConfigModule],
-  controllers: [RouteEstimationController],
+  controllers: [RouteEstimationController, RouteCostEstimatesController],
   providers: [
     EstimateRouteService,
+    EstimateRouteCostService,
     MockRoutingProvider,
     ValhallaHttpClient,
     ValhallaRoutingProvider,

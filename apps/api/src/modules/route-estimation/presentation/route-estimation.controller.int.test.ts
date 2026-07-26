@@ -1,4 +1,5 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { estimateRouteCostResponseSchema } from '@route-cost/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import routePrimaryFixture from '../../../../test/fixtures/valhalla/route-primary.json';
@@ -18,23 +19,19 @@ describe('RouteEstimationController HTTP', () => {
     useMockEnvironment();
     app = await createTestApp();
 
-    const response = await postRoute();
+    const response = await postRoute({ alternatives: 0 });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toMatchObject({
-      alternatives: [
-        {
-          id: 'primary',
-          distanceMetres: 12_500,
-          summary: {
-            urbanDistanceMetres: 7_500,
-            motorwayDistanceMetres: 5_000,
-          },
-        },
-      ],
+    expect(response.json().alternatives[0]).toMatchObject({
+      id: 'primary',
+      distanceMetres: 17_500,
+      summary: {
+        urbanDistanceMetres: 7_500,
+        interurbanDistanceMetres: 5_000,
+        motorwayDistanceMetres: 5_000,
+      },
     });
   }, 10_000);
-
   it('selects the Valhalla provider through configuration', async () => {
     useValhallaEnvironment();
     mockValhallaFetch();
@@ -161,6 +158,199 @@ describe('RouteEstimationController HTTP', () => {
   });
 });
 
+describe('RouteCostEstimatesController HTTP', () => {
+  afterEach(async () => {
+    await app?.close();
+    app = undefined;
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('returns a valid route cost estimate with route and segment information', async () => {
+    useMockEnvironment();
+    app = await createTestApp();
+
+    const response = await postRouteCost({ alternatives: 0 });
+    const body = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(() => estimateRouteCostResponseSchema.parse(body)).not.toThrow();
+    expect(body.alternatives[0]).toMatchObject({
+      id: 'primary',
+      distanceMetres: 17_500,
+      durationSeconds: 1620,
+      encodedPolyline: 'mock-polyline',
+      summary: {
+        urbanDistanceMetres: 7_500,
+        interurbanDistanceMetres: 5_000,
+        motorwayDistanceMetres: 5_000,
+        unknownDistanceMetres: 0,
+      },
+      fuelEstimate: {
+        breakdown: {
+          urban: {
+            distanceMetres: 7_500,
+            litresPer100Km: 3.8,
+          },
+          interurban: {
+            distanceMetres: 5_000,
+            litresPer100Km: 3,
+          },
+          motorway: {
+            distanceMetres: 5_000,
+            litresPer100Km: 4.1,
+          },
+          unknown: {
+            distanceMetres: 0,
+            litresPer100Km: 3.4,
+            estimatedLitres: 0,
+          },
+        },
+      },
+      costEstimate: {
+        fuelPrice: {
+          amountPerLitre: 1.6,
+          currency: 'EUR',
+        },
+      },
+    });
+    expect(body.alternatives[0].segments[0]).toMatchObject({
+      distanceMetres: 7_500,
+      beginShapeIndex: 0,
+      endShapeIndex: 12,
+      roadCategory: 'urban',
+      classificationReason: 'urban-density',
+    });
+    expect(
+      body.alternatives[0].fuelEstimate.breakdown.urban.estimatedLitres,
+    ).toBeCloseTo(0.285);
+    expect(
+      body.alternatives[0].fuelEstimate.breakdown.interurban.estimatedLitres,
+    ).toBeCloseTo(0.15);
+    expect(
+      body.alternatives[0].fuelEstimate.breakdown.motorway.estimatedLitres,
+    ).toBeCloseTo(0.205);
+    expect(body.alternatives[0].fuelEstimate.totalLitres).toBeCloseTo(0.64);
+    expect(body.alternatives[0].costEstimate.estimatedCost).toBeCloseTo(1.024);
+  });
+
+  it('returns multiple route cost estimates in provider order', async () => {
+    useMockEnvironment();
+    app = await createTestApp();
+
+    const response = await postRouteCost({ alternatives: 2 });
+    const body = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(
+      body.alternatives.map((alternative: { id: string }) => alternative.id),
+    ).toEqual(['primary', 'alternative-1', 'alternative-2']);
+    expect(body.alternatives).toHaveLength(3);
+    expect(body.alternatives[1].fuelEstimate.totalLitres).toBeGreaterThan(0);
+    expect(body.alternatives[2].costEstimate.estimatedCost).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ['invalid latitude', { origin: { latitude: 91, longitude: 2.154 } }],
+    ['invalid longitude', { origin: { latitude: 41.3902, longitude: 181 } }],
+    [
+      'identical origin and destination',
+      {
+        origin: { latitude: 41.3902, longitude: 2.154 },
+        destination: { latitude: 41.3902, longitude: 2.154 },
+      },
+    ],
+    ['unsupported vehicle category', { vehicleCategory: 'bicycle' }],
+    [
+      'missing consumption category',
+      {
+        consumptionProfile: {
+          urbanLitresPer100Km: 3.8,
+          interurbanLitresPer100Km: 3,
+          motorwayLitresPer100Km: 4.1,
+        },
+      },
+    ],
+    [
+      'zero consumption rate',
+      { consumptionProfile: { urbanLitresPer100Km: 0 } },
+    ],
+    [
+      'negative consumption rate',
+      { consumptionProfile: { urbanLitresPer100Km: -1 } },
+    ],
+    [
+      'excessive consumption rate',
+      { consumptionProfile: { urbanLitresPer100Km: 101 } },
+    ],
+    ['missing fuel price', { fuelPrice: undefined }],
+    ['zero fuel price', { fuelPrice: { amountPerLitre: 0, currency: 'EUR' } }],
+    [
+      'invalid currency',
+      { fuelPrice: { amountPerLitre: 1.6, currency: 'eur' } },
+    ],
+    ['invalid alternatives', { alternatives: 3 }],
+  ])('returns 400 for %s', async (_name, patch) => {
+    useMockEnvironment();
+    app = await createTestApp();
+
+    const response = await postRouteCost(patch);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      code: 'INVALID_ROUTE_COST_REQUEST',
+    });
+  });
+
+  it.each([
+    [
+      404,
+      { error: 'No route found.', error_code: 'no_route' },
+      404,
+      'ROUTE_NOT_FOUND',
+    ],
+    [408, undefined, 504, 'ROUTING_PROVIDER_TIMEOUT'],
+  ])(
+    'maps provider response status %s to application status %s',
+    async (upstreamStatus, upstreamBody, expectedStatus, code) => {
+      useValhallaEnvironment();
+      if (upstreamStatus === 408) {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn((_url, init: RequestInit | undefined) => {
+            init?.signal?.addEventListener('abort', () => undefined);
+            return Promise.reject(new DOMException('Aborted', 'AbortError'));
+          }),
+        );
+      } else {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockResolvedValue(jsonResponse(upstreamBody, upstreamStatus)),
+        );
+      }
+      app = await createTestApp();
+
+      const response = await postRouteCost();
+
+      expect(response.statusCode).toBe(expectedStatus);
+      expect(response.json()).toMatchObject({ code });
+      expect(response.body).not.toContain('test-valhalla-key');
+    },
+  );
+
+  it('keeps the existing route endpoint compatible', async () => {
+    useMockEnvironment();
+    app = await createTestApp();
+
+    const response = await postRoute({ alternatives: 0 });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      alternatives: [{ id: 'primary', encodedPolyline: 'mock-polyline' }],
+    });
+  });
+});
+
 function useMockEnvironment(): void {
   vi.stubEnv('ROUTING_PROVIDER', 'mock');
   vi.stubEnv('SWAGGER_ENABLED', 'false');
@@ -193,6 +383,36 @@ async function postRoute(patch: Record<string, unknown> = {}) {
       alternatives: 1,
       ...patch,
     },
+  });
+}
+
+async function postRouteCost(patch: Record<string, unknown> = {}) {
+  if (!app) {
+    throw new Error('App not initialized.');
+  }
+
+  const payload = {
+    origin: { latitude: 41.3902, longitude: 2.154 },
+    destination: { latitude: 41.5912, longitude: 1.5209 },
+    vehicleCategory: 'maxi-scooter',
+    consumptionProfile: {
+      urbanLitresPer100Km: 3.8,
+      interurbanLitresPer100Km: 3,
+      motorwayLitresPer100Km: 4.1,
+      unknownLitresPer100Km: 3.4,
+    },
+    fuelPrice: {
+      amountPerLitre: 1.6,
+      currency: 'EUR',
+    },
+    alternatives: 1,
+    ...patch,
+  };
+
+  return app.inject({
+    method: 'POST',
+    url: '/api/v1/route-cost-estimates',
+    payload,
   });
 }
 

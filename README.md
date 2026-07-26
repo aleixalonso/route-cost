@@ -2,7 +2,7 @@
 
 RouteCost estimates the real cost of a vehicle route using route characteristics and vehicle-specific consumption data.
 
-This repository is in its initial development phase. It contains a portable monorepo foundation, health checks, and the initial routing-provider slice.
+This repository is in its initial development phase. It contains a portable monorepo foundation, health checks, the initial routing-provider slice, and a backend route fuel/cost estimation endpoint.
 
 ## Requirements
 
@@ -26,6 +26,39 @@ pnpm dev
 - API: http://localhost:3001
 - Swagger: http://localhost:3001/docs
 - Health: http://localhost:3001/api/v1/health/ready
+
+## Route Cost Estimates
+
+`POST /api/v1/route-cost-estimates` calculates route alternatives through the configured routing provider, estimates litres by road category, and estimates fuel cost. Consumption figures are example values only.
+
+```bash
+curl \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --data '{
+    "origin": {
+      "latitude": 41.3902,
+      "longitude": 2.154
+    },
+    "destination": {
+      "latitude": 41.5912,
+      "longitude": 1.5209
+    },
+    "vehicleCategory": "maxi-scooter",
+    "consumptionProfile": {
+      "urbanLitresPer100Km": 3.8,
+      "interurbanLitresPer100Km": 3.0,
+      "motorwayLitresPer100Km": 4.1,
+      "unknownLitresPer100Km": 3.4
+    },
+    "fuelPrice": {
+      "amountPerLitre": 1.6,
+      "currency": "EUR"
+    },
+    "alternatives": 1
+  }' \
+  http://localhost:3001/api/v1/route-cost-estimates
+```
 
 ## Scripts
 
