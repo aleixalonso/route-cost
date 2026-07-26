@@ -20,6 +20,19 @@ pnpm setup
 pnpm dev
 ```
 
+Open http://localhost:5173.
+
+Frontend flow:
+
+1. Select origin.
+2. Select destination.
+3. Select a catalog or custom vehicle.
+4. Enter fuel price.
+5. Calculate.
+6. Review route and cost estimates.
+
+The first frontend flow is optimized mobile-first and does not include a route map yet. Mock providers are the default, so local development works without live provider credentials.
+
 ## Local URLs
 
 - Frontend: http://localhost:5173
@@ -160,6 +173,13 @@ Routing endpoints continue accepting coordinates rather than free-form address t
 ## Structure
 
 - `apps/web`: React, Vite, Tailwind, TanStack Query web app
+  - `src/pages/route-estimator`: first complete route-cost page
+  - `src/features/location-search`: autocomplete and details resolution
+  - `src/features/vehicle-selection`: API-backed native vehicle selection
+  - `src/features/route-cost-form`: form request mapping and submission
+  - `src/features/route-cost-results`: estimate rendering and alternatives
+  - `src/shared/components`: native primitives whose styling is intrinsic only
+  - `src/shared/api`: native fetch client and typed API errors
 - `apps/api`: NestJS API on Fastify
 - `apps/e2e`: Playwright browser tests
 - `packages/domain`: pure business logic
@@ -171,10 +191,14 @@ Routing endpoints continue accepting coordinates rather than free-form address t
 ## Tests
 
 ```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
 pnpm test
 pnpm test:coverage
 pnpm test:integration
 pnpm test:e2e
+pnpm build
 ```
 
 ## Docker

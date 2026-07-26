@@ -36,6 +36,42 @@ Domain contains deterministic business logic with no framework, network, or pers
 
 Infrastructure contains adapters such as the initial mock routing provider. Full hexagonal structure is not required for trivial endpoints, but provider-specific models must not leak into contracts or domain logic.
 
+## Web Frontend
+
+The first web vertical slice is implemented at `/` as a mobile-first route estimator. It uses React, Vite, Tailwind CSS, TanStack Query, React Hook Form, React Router, and shared Zod contracts.
+
+Feature folders own user-facing behavior:
+
+```text
+apps/web/src/pages/route-estimator
+apps/web/src/features/location-search
+apps/web/src/features/vehicle-selection
+apps/web/src/features/route-cost-form
+apps/web/src/features/route-cost-results
+apps/web/src/shared/api
+apps/web/src/shared/components
+apps/web/src/shared/lib
+```
+
+The dependency direction is:
+
+```text
+app -> pages -> features -> shared
+features -> shared
+shared -> no feature imports
+web -> @route-cost/contracts
+```
+
+The page owns responsive layout and spacing. Shared primitives own only intrinsic control appearance and native semantics. They do not impose external margins, sticky positioning, page widths, or responsive placement.
+
+Location text and resolved locations are separate state. Autocomplete suggestions do not include coordinates; after selection the frontend calls location details, stores the resolved coordinate, and only then allows route-cost submission. Editing selected text clears the resolved location.
+
+Vehicle mode is represented as a discriminated union at the submit boundary. Catalog mode sends `vehicleId` only. Custom mode sends `vehicleCategory` plus `consumptionProfile` only. The mapper validates the final request with `estimateRouteCostRequestSchema`.
+
+Results stay in page memory and are not persisted to local storage, session storage, cookies, or the URL. Distances, durations, litres, consumption rates, and EUR money are formatted in the frontend with `es-ES`.
+
+The map is intentionally not implemented in this milestone. A bounded placeholder marks the future map region.
+
 ## Routing
 
 `@route-cost/routing` owns provider-neutral routing models, the `RoutingProvider` port, vehicle-category profile resolution, segment classification, and route distance summaries.

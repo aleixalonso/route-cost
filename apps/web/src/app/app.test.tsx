@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { renderWithProviders } from '../test/render';
@@ -9,54 +9,38 @@ describe('App', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the application name', () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
-
-    renderWithProviders(<App />);
-
-    expect(
-      screen.getByRole('heading', { name: 'RouteCost' }),
-    ).toBeInTheDocument();
-  });
-
-  it('shows the loading state while checking health', () => {
+  it('renders the route estimator flow', () => {
     vi.spyOn(globalThis, 'fetch').mockReturnValue(
       new Promise<Response>(() => {}),
     );
 
     renderWithProviders(<App />);
 
-    expect(screen.getByText('Checking availability...')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'RouteCost' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Origin')).toBeInTheDocument();
+    expect(screen.getByLabelText('Destination')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Calculate route' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Route map will appear here.')).toBeInTheDocument();
   });
 
-  it('shows API availability after a successful health response', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      Response.json({ status: 'ok', service: 'route-cost-api' }),
+  it('shows vehicle loading state', () => {
+    vi.spyOn(globalThis, 'fetch').mockReturnValue(
+      new Promise<Response>(() => {}),
     );
 
     renderWithProviders(<App />);
 
-    await waitFor(() =>
-      expect(
-        screen.getByText('API available: route-cost-api'),
-      ).toBeInTheDocument(),
-    );
-  });
-
-  it('shows an error state when health fails', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(null, { status: 503 }),
-    );
-
-    renderWithProviders(<App />);
-
-    await waitFor(() =>
-      expect(screen.getByText('API unavailable')).toBeInTheDocument(),
-    );
+    expect(screen.getByText('Loading vehicles...')).toBeInTheDocument();
   });
 
   it('renders the 404 page for unknown routes', () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'));
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      Response.json({ items: [], total: 0 }),
+    );
 
     renderWithProviders(<App />, '/missing');
 
