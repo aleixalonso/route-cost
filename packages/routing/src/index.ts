@@ -181,7 +181,7 @@ export class RoutingProviderRouteNotFoundError extends Error {
   }
 }
 
-interface RoutingProviderErrorOptions {
+export interface RoutingProviderErrorOptions {
   status?: number | undefined;
   providerRequestId?: string | undefined;
   providerErrorCode?: string | undefined;

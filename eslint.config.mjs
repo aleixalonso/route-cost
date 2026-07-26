@@ -21,7 +21,9 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['eslint.config.mjs'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -75,11 +77,20 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/api/**/*.ts', 'apps/e2e/**/*.ts', 'scripts/**/*.mjs'],
+    files: ['apps/api/**/*.ts', 'apps/e2e/**/*.ts', 'scripts/**/*.{mjs,mts}'],
     languageOptions: {
       globals: {
         ...globals.node,
       },
+    },
+  },
+  {
+    files: ['scripts/**/*.{mjs,mts}'],
+    rules: {
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      'no-console': 'off',
     },
   },
   {

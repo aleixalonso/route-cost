@@ -8,15 +8,20 @@ web -> domain when logic is reusable and safe for the client
 
 api -> contracts
 api -> domain
+api -> geocoding
 api -> routing
 api -> vehicle-data
 
 routing -> contracts or domain when necessary
 vehicle-data -> domain/contracts
+contracts -> shared schemas where appropriate
 
 packages never -> apps
 web never -> api
 api never -> web
+geocoding never -> api
+geocoding never -> contracts unless current package layering explicitly permits it
+geocoding never -> Stadia-specific models
 ```
 
 Packages expose public APIs through `src/index.ts`. Applications must not deep-import another app.
@@ -136,3 +141,50 @@ Automated tests mock network access and use sanitized fixtures. The manual live 
 ```bash
 ROUTING_PROVIDER=valhalla VALHALLA_API_KEY=<key> pnpm routing:verify
 ```
+
+## Location Search
+
+`@route-cost/geocoding` owns provider-neutral location models, request/result types, provider errors, and the `GeocodingProvider` port. It has no NestJS, Fastify, environment, React, MapLibre, or Stadia response dependencies.
+
+The API registers backend geocoding behind the `GEOCODING_PROVIDER` token:
+
+```text
+HTTP controller
+   |
+   v
+Application service
+   |
+   v
+GEOCODING_PROVIDER
+   |-- MockGeocodingProvider
+   `-- StadiaGeocodingProvider
+          |
+          v
+     Stadia Maps v2
+```
+
+```dotenv
+GEOCODING_PROVIDER=mock
+```
+
+selects deterministic Barcelona-area data and requires no credentials.
+
+```dotenv
+GEOCODING_PROVIDER=stadia
+STADIA_GEOCODING_API_KEY=<key>
+```
+
+selects Stadia Maps Geocoding v2 over the EU endpoint. The API key is sent in the `Authorization` header and never returned to clients.
+
+The API exposes:
+
+```text
+GET /api/v1/locations/autocomplete
+GET /api/v1/locations/search
+GET /api/v1/locations/details
+GET /api/v1/locations/reverse
+```
+
+Autocomplete returns suggestions without coordinates. Clients call details after a suggestion is selected. Search and reverse return normalized locations with coordinates and attribution.
+
+Routing remains coordinate-based. `POST /api/v1/routes` and `POST /api/v1/route-cost-estimates` do not accept free-form location text.

@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "geocoding": {
+    "attribution": { "url": "https://stadiamaps.com/attribution/" }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.17, 41.387] },
+      "properties": {
+        "gid": "stadia:poi:placa-catalunya",
+        "layer": "poi",
+        "name": "Plaça de Catalunya",
+        "label": "Plaça de Catalunya, Barcelona",
+        "country_code": "ES",
+        "country": "España",
+        "region": "Catalunya",
+        "locality": "Barcelona",
+        "precision": "point"
+      }
+    }
+  ]
+}

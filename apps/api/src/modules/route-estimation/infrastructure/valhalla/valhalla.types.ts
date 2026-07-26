@@ -73,7 +73,20 @@ export interface ValhallaTraceAttributesRequest {
   costing_options?: ValhallaCostingOptions;
 }
 
-export function toValhallaConfig(environment: Environment): ValhallaConfig {
+type ValhallaEnvironment = Pick<
+  Environment,
+  | 'VALHALLA_BASE_URL'
+  | 'VALHALLA_ROUTE_PATH'
+  | 'VALHALLA_TRACE_ATTRIBUTES_PATH'
+  | 'VALHALLA_API_KEY'
+  | 'VALHALLA_CLIENT_ID'
+  | 'VALHALLA_REQUEST_TIMEOUT_MS'
+  | 'VALHALLA_MAX_ALTERNATIVES'
+>;
+
+export function toValhallaConfig(
+  environment: ValhallaEnvironment & Record<string, unknown>,
+): ValhallaConfig {
   return {
     baseUrl: environment.VALHALLA_BASE_URL,
     routePath: environment.VALHALLA_ROUTE_PATH,

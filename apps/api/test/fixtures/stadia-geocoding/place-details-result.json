@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "geocoding": {
+    "attribution": { "url": "https://stadiamaps.com/attribution/" }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.1744, 41.4036] },
+      "properties": {
+        "gid": "stadia:poi:sagrada-familia",
+        "layer": "poi",
+        "name": "Sagrada Família",
+        "label": "Sagrada Família, Barcelona, Catalunya, España",
+        "country_code": "ES",
+        "country": "España",
+        "region": "Catalunya",
+        "locality": "Barcelona",
+        "precision": "point"
+      }
+    }
+  ]
+}
