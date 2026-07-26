@@ -6,6 +6,9 @@ import {
   estimateRouteCostResponseSchema,
   estimateRouteRequestSchema,
   healthStatusSchema,
+  vehicleDetailResponseSchema,
+  vehicleListQuerySchema,
+  vehicleListResponseSchema,
 } from './index.js';
 
 describe('contracts', () => {
@@ -43,10 +46,22 @@ describe('contracts', () => {
 });
 
 describe('route cost contracts', () => {
-  it('accepts a valid complete request', () => {
+  it('accepts a valid custom request', () => {
     expect(estimateRouteCostRequestSchema.parse(validRequest())).toEqual(
       validRequest(),
     );
+  });
+
+  it('accepts a valid catalog request', () => {
+    expect(() =>
+      estimateRouteCostRequestSchema.parse({
+        origin: { latitude: 41.3902, longitude: 2.154 },
+        destination: { latitude: 41.5912, longitude: 1.5209 },
+        vehicleId: 'honda-forza-350-2025',
+        fuelPrice: { amountPerLitre: 1.6, currency: 'EUR' },
+        alternatives: 1,
+      }),
+    ).not.toThrow();
   });
 
   it.each(['car', 'motorcycle', 'maxi-scooter', 'low-speed-scooter'] as const)(
@@ -124,6 +139,20 @@ describe('route cost contracts', () => {
       { consumptionProfile: { urbanLitresPer100Km: 101 } },
     ],
     ['over max price', { fuelPrice: { amountPerLitre: 101, currency: 'EUR' } }],
+    [
+      'neither vehicle mode',
+      { vehicleCategory: undefined, consumptionProfile: undefined },
+    ],
+    ['both vehicle modes', { vehicleId: 'honda-forza-350-2025' }],
+    [
+      'vehicleId with profile',
+      {
+        vehicleId: 'honda-forza-350-2025',
+        vehicleCategory: undefined,
+      },
+    ],
+    ['category without profile', { consumptionProfile: undefined }],
+    ['profile without category', { vehicleCategory: undefined }],
   ])('rejects %s', (_name, patch) => {
     expect(() =>
       estimateRouteCostRequestSchema.parse({
@@ -160,6 +189,105 @@ describe('route cost contracts', () => {
 
     expect(() => estimateRouteCostResponseSchema.parse(response)).toThrow();
   });
+
+  it('accepts catalog and custom vehicle selection responses', () => {
+    expect(() =>
+      estimateRouteCostResponseSchema.parse(validResponse()),
+    ).not.toThrow();
+
+    const response = validResponse();
+    response.vehicle = {
+      source: 'custom',
+      vehicleCategory: 'maxi-scooter',
+      consumptionProfile: validRequest().consumptionProfile,
+    };
+
+    expect(() => estimateRouteCostResponseSchema.parse(response)).not.toThrow();
+  });
+
+  it('rejects an invalid vehicle source discriminator', () => {
+    const response = validResponse();
+    response.vehicle.source =
+      'invalid' as EstimateRouteCostResponse['vehicle']['source'];
+
+    expect(() => estimateRouteCostResponseSchema.parse(response)).toThrow();
+  });
+});
+
+describe('vehicle contracts', () => {
+  it.each([
+    ['empty query', {}],
+    ['manufacturer', { manufacturer: 'Honda' }],
+    ['search', { search: 'Golf' }],
+    ['category', { vehicleCategory: 'car' }],
+    ['fuel type', { fuelType: 'petrol' }],
+    ['powertrain', { powertrainType: 'full-hybrid' }],
+  ])('accepts valid %s', (_name, query) => {
+    expect(() => vehicleListQuerySchema.parse(query)).not.toThrow();
+  });
+
+  it.each([
+    ['unsupported category', { vehicleCategory: 'bicycle' }],
+    ['unsupported fuel type', { fuelType: 'electric' }],
+    ['unsupported powertrain', { powertrainType: 'plug-in-hybrid' }],
+  ])('rejects %s', (_name, query) => {
+    expect(() => vehicleListQuerySchema.parse(query)).toThrow();
+  });
+
+  it('accepts list and empty list responses', () => {
+    expect(() =>
+      vehicleListResponseSchema.parse({
+        items: [validVehicleSummary()],
+        total: 1,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      vehicleListResponseSchema.parse({ items: [], total: 0 }),
+    ).not.toThrow();
+  });
+
+  it('accepts a detail response', () => {
+    expect(() =>
+      vehicleDetailResponseSchema.parse(validVehicleDetail()),
+    ).not.toThrow();
+  });
+
+  it.each([
+    [
+      'invalid consumption data',
+      { consumptionProfile: { urbanLitresPer100Km: 0 } },
+    ],
+    [
+      'missing source metadata',
+      {
+        consumptionData: {
+          ...validVehicleDetail().consumptionData,
+          sources: [],
+        },
+      },
+    ],
+    [
+      'invalid source URL',
+      {
+        consumptionData: {
+          ...validVehicleDetail().consumptionData,
+          sources: [
+            {
+              ...validVehicleDetail().consumptionData.sources[0],
+              url: 'not-a-url',
+            },
+          ],
+        },
+      },
+    ],
+  ])('rejects %s', (_name, patch) => {
+    expect(() =>
+      vehicleDetailResponseSchema.parse({
+        ...validVehicleDetail(),
+        ...patch,
+      }),
+    ).toThrow();
+  });
 });
 
 function validRequest() {
@@ -183,6 +311,24 @@ function validRequest() {
 
 function validResponse(): EstimateRouteCostResponse {
   return {
+    vehicle: {
+      source: 'catalog',
+      vehicleId: 'honda-forza-350-2025',
+      displayName: 'Honda Forza 350',
+      vehicleCategory: 'maxi-scooter',
+      fuelType: 'petrol',
+      powertrainType: 'internal-combustion',
+      consumptionProfile: {
+        urbanLitresPer100Km: 3.8,
+        interurbanLitresPer100Km: 3,
+        motorwayLitresPer100Km: 4.1,
+        unknownLitresPer100Km: 3.4,
+      },
+      consumptionData: {
+        status: 'estimated',
+        confidence: 'medium',
+      },
+    },
     alternatives: [
       {
         id: 'primary',
@@ -243,4 +389,51 @@ function validResponse(): EstimateRouteCostResponse {
       },
     ],
   };
+}
+
+function validVehicleSummary() {
+  return {
+    id: 'honda-forza-350-2025',
+    manufacturer: 'Honda',
+    model: 'Forza 350',
+    variant: 'Standard',
+    displayName: 'Honda Forza 350',
+    yearFrom: 2025,
+    vehicleCategory: 'maxi-scooter',
+    fuelType: 'petrol',
+    powertrainType: 'internal-combustion',
+    engineDisplacementCc: 330,
+    consumptionProfile: {
+      urbanLitresPer100Km: 3.7,
+      interurbanLitresPer100Km: 3.1,
+      motorwayLitresPer100Km: 4,
+      unknownLitresPer100Km: 3.4,
+    },
+    consumptionData: {
+      status: 'estimated',
+      confidence: 'medium',
+      officialCombinedLitresPer100Km: 3.4,
+    },
+  } as const;
+}
+
+function validVehicleDetail() {
+  return {
+    ...validVehicleSummary(),
+    consumptionData: {
+      status: 'estimated',
+      confidence: 'medium',
+      officialCombinedLitresPer100Km: 3.4,
+      methodology: 'Estimated from official combined consumption.',
+      sources: [
+        {
+          type: 'manufacturer',
+          title: 'Forza 350 specifications and price',
+          publisher: 'Honda',
+          url: 'https://www.honda.de/motorcycles/range/scooter/forza-350/specifications-and-price.html',
+          accessedAt: '2026-07-26',
+        },
+      ],
+    },
+  } as const;
 }

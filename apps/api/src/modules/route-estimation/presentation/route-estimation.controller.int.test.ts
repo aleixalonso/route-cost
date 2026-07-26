@@ -175,6 +175,10 @@ describe('RouteCostEstimatesController HTTP', () => {
 
     expect(response.statusCode).toBe(200);
     expect(() => estimateRouteCostResponseSchema.parse(body)).not.toThrow();
+    expect(body.vehicle).toMatchObject({
+      source: 'custom',
+      vehicleCategory: 'maxi-scooter',
+    });
     expect(body.alternatives[0]).toMatchObject({
       id: 'primary',
       distanceMetres: 17_500,
@@ -234,6 +238,51 @@ describe('RouteCostEstimatesController HTTP', () => {
     expect(body.alternatives[0].costEstimate.estimatedCost).toBeCloseTo(1.024);
   });
 
+  it('supports catalog vehicle mode', async () => {
+    useMockEnvironment();
+    app = await createTestApp();
+
+    const response = await postRouteCost({
+      vehicleId: 'honda-forza-350-2025',
+      vehicleCategory: undefined,
+      consumptionProfile: undefined,
+      alternatives: 0,
+    });
+    const body = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(body.vehicle).toMatchObject({
+      source: 'catalog',
+      vehicleId: 'honda-forza-350-2025',
+      displayName: 'Honda Forza 350',
+      vehicleCategory: 'maxi-scooter',
+      fuelType: 'petrol',
+      powertrainType: 'internal-combustion',
+      consumptionData: { status: 'estimated', confidence: 'medium' },
+    });
+    expect(body.vehicle.consumptionProfile.urbanLitresPer100Km).toBe(3.7);
+    expect(
+      body.alternatives[0].fuelEstimate.breakdown.urban.litresPer100Km,
+    ).toBe(3.7);
+  });
+
+  it('returns 404 for unknown catalog vehicles before routing', async () => {
+    useValhallaEnvironment();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    app = await createTestApp();
+
+    const response = await postRouteCost({
+      vehicleId: 'missing-vehicle',
+      vehicleCategory: undefined,
+      consumptionProfile: undefined,
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toMatchObject({ code: 'VEHICLE_NOT_FOUND' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('returns multiple route cost estimates in provider order', async () => {
     useMockEnvironment();
     app = await createTestApp();
@@ -290,6 +339,16 @@ describe('RouteCostEstimatesController HTTP', () => {
       { fuelPrice: { amountPerLitre: 1.6, currency: 'eur' } },
     ],
     ['invalid alternatives', { alternatives: 3 }],
+    [
+      'no vehicle selection',
+      { vehicleCategory: undefined, consumptionProfile: undefined },
+    ],
+    [
+      'catalog and custom selection together',
+      { vehicleId: 'honda-forza-350-2025' },
+    ],
+    ['category without profile', { consumptionProfile: undefined }],
+    ['profile without category', { vehicleCategory: undefined }],
   ])('returns 400 for %s', async (_name, patch) => {
     useMockEnvironment();
     app = await createTestApp();

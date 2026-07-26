@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import type { Environment } from '../../config/environment';
+import { VehiclesModule } from '../vehicles/vehicles.module';
 import { EstimateRouteService } from './application/estimate-route.service';
 import { EstimateRouteCostService } from './application/estimate-route-cost.service';
 import { ROUTING_PROVIDER } from './application/routing-provider.token';
@@ -16,7 +17,7 @@ import { RouteCostEstimatesController } from './presentation/route-cost-estimate
 import { RouteEstimationController } from './presentation/route-estimation.controller';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, VehiclesModule],
   controllers: [RouteEstimationController, RouteCostEstimatesController],
   providers: [
     EstimateRouteService,

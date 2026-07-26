@@ -1,0 +1,34 @@
+{
+  "id": "honda-nx500-2025",
+  "manufacturer": "Honda",
+  "model": "NX500",
+  "variant": "Standard",
+  "displayName": "Honda NX500",
+  "yearFrom": 2025,
+  "vehicleCategory": "motorcycle",
+  "fuelType": "petrol",
+  "powertrainType": "internal-combustion",
+  "engineDisplacementCc": 471,
+  "consumptionProfile": {
+    "urbanLitresPer100Km": 4.0,
+    "interurbanLitresPer100Km": 3.3,
+    "motorwayLitresPer100Km": 4.2,
+    "unknownLitresPer100Km": 3.6
+  },
+  "consumptionData": {
+    "status": "estimated",
+    "confidence": "medium",
+    "officialCombinedLitresPer100Km": 3.6,
+    "methodology": "Honda publishes a combined fuel-consumption value. Category rates are estimated around that value: urban is higher for stop-start use, interurban is lower for steady moderate speeds, motorway is higher for sustained high speed, and unknown uses the published combined value.",
+    "sources": [
+      {
+        "type": "manufacturer",
+        "title": "NX500 specifications and price",
+        "publisher": "Honda España",
+        "url": "https://www.honda.es/motorcycles/range/adventure/nx500/specifications-and-price.html",
+        "accessedAt": "2026-07-26",
+        "notes": "Used for 471 cc displacement and 3.6 L/100 km fuel consumption."
+      }
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "volkswagen-golf-2-0-tdi-2025",
+  "manufacturer": "Volkswagen",
+  "model": "Golf",
+  "variant": "2.0 TDI Energy 85 kW",
+  "displayName": "Volkswagen Golf 2.0 TDI",
+  "yearFrom": 2025,
+  "vehicleCategory": "car",
+  "fuelType": "diesel",
+  "powertrainType": "internal-combustion",
+  "engineDisplacementCc": 1968,
+  "consumptionProfile": {
+    "urbanLitresPer100Km": 6.2,
+    "interurbanLitresPer100Km": 3.6,
+    "motorwayLitresPer100Km": 4.3,
+    "unknownLitresPer100Km": 4.3
+  },
+  "consumptionData": {
+    "status": "estimated",
+    "confidence": "medium",
+    "officialCombinedLitresPer100Km": 4.3,
+    "methodology": "ADAC records manufacturer stated WLTP phase values for a current Golf 2.0 TDI Energy variant. Those values are mapped to RouteCost categories: WLTP short trip to urban, WLTP country road to interurban, WLTP motorway to motorway, and WLTP combined to unknown.",
+    "sources": [
+      {
+        "type": "independent-test",
+        "title": "VW Golf 2.0 TDI ENERGY (06/25 - 09/25)",
+        "publisher": "ADAC",
+        "url": "https://www.adac.de/rund-ums-fahrzeug/autokatalog/marken-modelle/vw/golf/viii-facelift/340773/",
+        "accessedAt": "2026-07-26",
+        "notes": "Used for current Golf VIII facelift 2.0 TDI variant, 1968 cc displacement, and manufacturer stated WLTP consumption values."
+      }
+    ]
+  }
+}

@@ -52,7 +52,7 @@ selects `ValhallaRoutingProvider`, which calls the Stadia Maps EU Valhalla API f
 
 `POST /api/v1/routes` accepts provider-neutral coordinates, vehicle category, and alternatives. It returns normalized alternatives, encoded polylines, classified segments, and route distance summaries.
 
-`POST /api/v1/route-cost-estimates` uses the same `RoutingProvider` and route summaries, then calls pure domain functions to estimate fuel consumption and fuel cost for each route alternative. The request supplies a custom category consumption profile in litres per 100 kilometres plus fuel price in currency units per litre. Consumption values in examples are illustrative.
+`POST /api/v1/route-cost-estimates` uses the same `RoutingProvider` and route summaries, then calls pure domain functions to estimate fuel consumption and fuel cost for each route alternative. The request can select a catalog vehicle by `vehicleId` or supply a custom category consumption profile in litres per 100 kilometres plus fuel price in currency units per litre. Consumption values in examples and catalog category profiles may be estimated.
 
 ```bash
 curl \
@@ -82,6 +82,54 @@ curl \
   }' \
   http://localhost:3001/api/v1/route-cost-estimates
 ```
+
+Catalog mode resolves the vehicle through the API `VEHICLE_CATALOG` port before routing:
+
+```bash
+curl \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --data '{
+    "origin": {
+      "latitude": 41.3902,
+      "longitude": 2.154
+    },
+    "destination": {
+      "latitude": 41.5912,
+      "longitude": 1.5209
+    },
+    "vehicleId": "honda-forza-350-2025",
+    "fuelPrice": {
+      "amountPerLitre": 1.6,
+      "currency": "EUR"
+    },
+    "alternatives": 1
+  }' \
+  http://localhost:3001/api/v1/route-cost-estimates
+```
+
+## Vehicles
+
+`@route-cost/vehicle-data` owns static provider-neutral catalog data, Zod validation, query functions, and source metadata. The API exposes it through:
+
+```text
+GET /api/v1/vehicles
+GET /api/v1/vehicles/:vehicleId
+```
+
+Examples:
+
+```bash
+curl \
+  "http://localhost:3001/api/v1/vehicles?vehicleCategory=maxi-scooter"
+```
+
+```bash
+curl \
+  "http://localhost:3001/api/v1/vehicles/honda-forza-350-2025"
+```
+
+No database, ORM, or external runtime data fetch is required for the catalog.
 
 Automated tests mock network access and use sanitized fixtures. The manual live check is:
 

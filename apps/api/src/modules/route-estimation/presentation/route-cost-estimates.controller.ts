@@ -24,10 +24,11 @@ import {
 } from '@route-cost/contracts';
 
 import { ZodValidationPipe } from '../../../common/zod-validation.pipe';
+import { VehicleNotFoundExceptionFilter } from '../../vehicles/presentation/vehicle-not-found-exception.filter';
 import { EstimateRouteCostService } from '../application/estimate-route-cost.service';
 import { RoutingProviderExceptionFilter } from './routing-provider-exception.filter';
 
-const routeCostEstimateExample = {
+const customRouteCostEstimateExample = {
   origin: { latitude: 41.3902, longitude: 2.154 },
   destination: { latitude: 41.5912, longitude: 1.5209 },
   vehicleCategory: 'maxi-scooter',
@@ -44,9 +45,20 @@ const routeCostEstimateExample = {
   alternatives: 1,
 };
 
+const catalogRouteCostEstimateExample = {
+  origin: { latitude: 41.3902, longitude: 2.154 },
+  destination: { latitude: 41.5912, longitude: 1.5209 },
+  vehicleId: 'honda-forza-350-2025',
+  fuelPrice: {
+    amountPerLitre: 1.6,
+    currency: 'EUR',
+  },
+  alternatives: 1,
+};
+
 @ApiTags('route-cost-estimates')
 @Controller('route-cost-estimates')
-@UseFilters(RoutingProviderExceptionFilter)
+@UseFilters(RoutingProviderExceptionFilter, VehicleNotFoundExceptionFilter)
 export class RouteCostEstimatesController {
   public constructor(
     private readonly estimateRouteCostService: EstimateRouteCostService,
@@ -57,9 +69,18 @@ export class RouteCostEstimatesController {
   @HttpCode(HttpStatus.OK)
   @ApiBody({
     description:
-      'Route request with illustrative litres-per-100-kilometres consumption rates and fuel price per litre.',
+      'Route request with exactly one vehicle selection mode: vehicleId from the catalog, or custom vehicleCategory with consumptionProfile. Catalog profiles may contain estimated data; full provenance is available from the vehicle detail endpoint.',
     schema: {
-      example: routeCostEstimateExample,
+      examples: {
+        catalogVehicle: {
+          summary: 'Catalog vehicle',
+          value: catalogRouteCostEstimateExample,
+        },
+        customProfile: {
+          summary: 'Custom profile',
+          value: customRouteCostEstimateExample,
+        },
+      },
     },
   })
   @ApiOkResponse({

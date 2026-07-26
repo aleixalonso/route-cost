@@ -2,7 +2,7 @@
 
 RouteCost estimates the real cost of a vehicle route using route characteristics and vehicle-specific consumption data.
 
-This repository is in its initial development phase. It contains a portable monorepo foundation, health checks, the initial routing-provider slice, and a backend route fuel/cost estimation endpoint.
+This repository is in its initial development phase. It contains a portable monorepo foundation, health checks, the initial routing-provider slice, a backend route fuel/cost estimation endpoint, and a small static vehicle catalog.
 
 ## Requirements
 
@@ -29,7 +29,34 @@ pnpm dev
 
 ## Route Cost Estimates
 
-`POST /api/v1/route-cost-estimates` calculates route alternatives through the configured routing provider, estimates litres by road category, and estimates fuel cost. Consumption figures are example values only.
+`POST /api/v1/route-cost-estimates` calculates route alternatives through the configured routing provider, estimates litres by road category, and estimates fuel cost. It supports catalog mode with `vehicleId` and custom mode with `vehicleCategory` plus `consumptionProfile`. Consumption figures are example or catalog-estimated values unless their metadata says otherwise.
+
+Catalog mode:
+
+```bash
+curl \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --data '{
+    "origin": {
+      "latitude": 41.3902,
+      "longitude": 2.154
+    },
+    "destination": {
+      "latitude": 41.5912,
+      "longitude": 1.5209
+    },
+    "vehicleId": "honda-forza-350-2025",
+    "fuelPrice": {
+      "amountPerLitre": 1.6,
+      "currency": "EUR"
+    },
+    "alternatives": 1
+  }' \
+  http://localhost:3001/api/v1/route-cost-estimates
+```
+
+Custom mode:
 
 ```bash
 curl \
@@ -60,6 +87,20 @@ curl \
   http://localhost:3001/api/v1/route-cost-estimates
 ```
 
+## Vehicle Catalog
+
+`@route-cost/vehicle-data` owns the static catalog data, validation, filtering, and provenance metadata. No database is required.
+
+```bash
+curl \
+  "http://localhost:3001/api/v1/vehicles?vehicleCategory=maxi-scooter"
+```
+
+```bash
+curl \
+  "http://localhost:3001/api/v1/vehicles/honda-forza-350-2025"
+```
+
 ## Scripts
 
 - `pnpm dev`: run web, API, and watch builds through Turborepo
@@ -76,7 +117,7 @@ curl \
 - `packages/domain`: pure business logic
 - `packages/contracts`: Zod HTTP contracts
 - `packages/routing`: provider-neutral routing abstraction
-- `packages/vehicle-data`: estimated sample vehicle catalog
+- `packages/vehicle-data`: static curated vehicle catalog with provenance metadata
 
 ## Tests
 

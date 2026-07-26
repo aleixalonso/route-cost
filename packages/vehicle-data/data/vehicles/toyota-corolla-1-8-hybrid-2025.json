@@ -1,0 +1,34 @@
+{
+  "id": "toyota-corolla-1-8-hybrid-2025",
+  "manufacturer": "Toyota",
+  "model": "Corolla",
+  "variant": "1.8 Hybrid 140 e-CVT",
+  "displayName": "Toyota Corolla 1.8 Hybrid",
+  "yearFrom": 2025,
+  "vehicleCategory": "car",
+  "fuelType": "petrol",
+  "powertrainType": "full-hybrid",
+  "engineDisplacementCc": 1798,
+  "consumptionProfile": {
+    "urbanLitresPer100Km": 4.2,
+    "interurbanLitresPer100Km": 4.5,
+    "motorwayLitresPer100Km": 5.2,
+    "unknownLitresPer100Km": 4.4
+  },
+  "consumptionData": {
+    "status": "estimated",
+    "confidence": "medium",
+    "officialCombinedLitresPer100Km": 4.4,
+    "methodology": "Toyota publishes a WLTP combined range for the 1.8 Hybrid. The lower published combined value is retained for the selected efficient hatchback profile. Category rates are estimated: urban is kept low to reflect full-hybrid recuperation and electric assistance, interurban is near combined, motorway is higher for sustained engine operation, and unknown uses the selected combined value.",
+    "sources": [
+      {
+        "type": "manufacturer",
+        "title": "Nuevo Toyota Corolla Hatchback híbrido",
+        "publisher": "Toyota España",
+        "url": "https://www.toyota.es/coches/corolla",
+        "accessedAt": "2026-07-26",
+        "notes": "Used for 1.8 Hybrid 140 e-CVT and 4.4-4.7 L/100 km WLTP combined range."
+      }
+    ]
+  }
+}

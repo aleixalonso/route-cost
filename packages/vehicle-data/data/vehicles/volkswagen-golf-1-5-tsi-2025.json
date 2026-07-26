@@ -1,0 +1,34 @@
+{
+  "id": "volkswagen-golf-1-5-tsi-2025",
+  "manufacturer": "Volkswagen",
+  "model": "Golf",
+  "variant": "1.5 TSI Energy 85 kW",
+  "displayName": "Volkswagen Golf 1.5 TSI",
+  "yearFrom": 2025,
+  "vehicleCategory": "car",
+  "fuelType": "petrol",
+  "powertrainType": "internal-combustion",
+  "engineDisplacementCc": 1498,
+  "consumptionProfile": {
+    "urbanLitresPer100Km": 6.5,
+    "interurbanLitresPer100Km": 4.8,
+    "motorwayLitresPer100Km": 6.2,
+    "unknownLitresPer100Km": 5.3
+  },
+  "consumptionData": {
+    "status": "estimated",
+    "confidence": "medium",
+    "officialCombinedLitresPer100Km": 5.3,
+    "methodology": "ADAC records manufacturer stated data for a current Golf 1.5 TSI Energy variant. The combined value is retained as official combined data. Category rates are estimated around it: urban is higher for short trips, interurban is lower for steady roads, motorway is higher for sustained high speed, and unknown uses the combined value.",
+    "sources": [
+      {
+        "type": "independent-test",
+        "title": "VW Golf 1.5 TSI ENERGY (ab 06/25)",
+        "publisher": "ADAC",
+        "url": "https://www.adac.de/rund-ums-fahrzeug/autokatalog/marken-modelle/vw/golf/viii-facelift/340768/",
+        "accessedAt": "2026-07-26",
+        "notes": "Used for current Golf VIII facelift 1.5 TSI variant, 1498 cc displacement, and 5.3 L/100 km stated consumption."
+      }
+    ]
+  }
+}

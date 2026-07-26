@@ -2,6 +2,11 @@ import type { RoutingProvider } from '@route-cost/routing';
 import { RoutingProviderTimeoutError } from '@route-cost/routing';
 import { describe, expect, it, vi } from 'vitest';
 
+import type {
+  ResolvedVehicleSelection,
+  ResolveVehicleSelectionService,
+} from '../../vehicles/application/resolve-vehicle-selection.service';
+import { VehicleNotFoundApplicationError } from '../../vehicles/application/vehicle-not-found.error';
 import { EstimateRouteCostService } from './estimate-route-cost.service';
 
 const request = {
@@ -26,7 +31,7 @@ describe('EstimateRouteCostService', () => {
     const calculateRoutes = vi.fn().mockResolvedValue(routes());
     const provider: RoutingProvider = { calculateRoutes };
 
-    await new EstimateRouteCostService(provider).estimate(request);
+    await service(provider).estimate(request);
 
     expect(calculateRoutes).toHaveBeenCalledOnce();
     expect(calculateRoutes).toHaveBeenCalledWith({
@@ -38,9 +43,7 @@ describe('EstimateRouteCostService', () => {
   });
 
   it('estimates one route alternative correctly', async () => {
-    const result = await new EstimateRouteCostService(provider()).estimate(
-      request,
-    );
+    const result = await service(provider()).estimate(request);
 
     expect(result.alternatives[0]).toMatchObject({
       id: 'primary',
@@ -85,9 +88,7 @@ describe('EstimateRouteCostService', () => {
   });
 
   it('estimates multiple alternatives independently and preserves ordering', async () => {
-    const result = await new EstimateRouteCostService(provider()).estimate(
-      request,
-    );
+    const result = await service(provider()).estimate(request);
 
     expect(result.alternatives.map((alternative) => alternative.id)).toEqual([
       'primary',
@@ -101,7 +102,7 @@ describe('EstimateRouteCostService', () => {
   });
 
   it('applies fuel price independently to each alternative', async () => {
-    const result = await new EstimateRouteCostService(provider()).estimate({
+    const result = await service(provider()).estimate({
       ...request,
       fuelPrice: { amountPerLitre: 2, currency: 'USD' },
     });
@@ -122,15 +123,11 @@ describe('EstimateRouteCostService', () => {
       calculateRoutes: vi.fn().mockRejectedValue(error),
     };
 
-    await expect(
-      new EstimateRouteCostService(provider).estimate(request),
-    ).rejects.toBe(error);
+    await expect(service(provider).estimate(request)).rejects.toBe(error);
   });
 
   it('preserves provider-neutral segment data without provider-specific transformation', async () => {
-    const result = await new EstimateRouteCostService(provider()).estimate(
-      request,
-    );
+    const result = await service(provider()).estimate(request);
 
     expect(result.alternatives[0]?.segments[0]).toEqual({
       distanceMetres: 10_000,
@@ -144,12 +141,87 @@ describe('EstimateRouteCostService', () => {
       density: 11,
     });
   });
+
+  it('uses catalog category and consumption profile for routing and calculation', async () => {
+    const calculateRoutes = vi.fn().mockResolvedValue(routes());
+    const provider: RoutingProvider = { calculateRoutes };
+    const result = await service(provider, {
+      source: 'catalog',
+      vehicleId: 'honda-forza-350-2025',
+      displayName: 'Honda Forza 350',
+      vehicleCategory: 'maxi-scooter',
+      fuelType: 'petrol',
+      powertrainType: 'internal-combustion',
+      consumptionProfile: {
+        urbanLitresPer100Km: 3.7,
+        interurbanLitresPer100Km: 3.1,
+        motorwayLitresPer100Km: 4,
+        unknownLitresPer100Km: 3.4,
+      },
+      consumptionData: { status: 'estimated', confidence: 'medium' },
+    }).estimate({
+      origin: request.origin,
+      destination: request.destination,
+      vehicleId: 'honda-forza-350-2025',
+      fuelPrice: request.fuelPrice,
+      alternatives: 1,
+    });
+
+    expect(calculateRoutes).toHaveBeenCalledWith(
+      expect.objectContaining({ vehicleCategory: 'maxi-scooter' }),
+    );
+    expect(result.vehicle).toMatchObject({
+      source: 'catalog',
+      vehicleId: 'honda-forza-350-2025',
+      displayName: 'Honda Forza 350',
+    });
+    expect(
+      result.alternatives[0]?.fuelEstimate.breakdown.urban.litresPer100Km,
+    ).toBe(3.7);
+  });
+
+  it('does not call the routing provider when vehicle resolution fails', async () => {
+    const calculateRoutes = vi.fn();
+    const error = new VehicleNotFoundApplicationError();
+
+    await expect(
+      service({ calculateRoutes }, undefined, error).estimate({
+        origin: request.origin,
+        destination: request.destination,
+        vehicleId: 'missing',
+        fuelPrice: request.fuelPrice,
+      }),
+    ).rejects.toBe(error);
+    expect(calculateRoutes).not.toHaveBeenCalled();
+  });
 });
 
 function provider(): RoutingProvider {
   return {
     calculateRoutes: vi.fn().mockResolvedValue(routes()),
   };
+}
+
+function service(
+  routingProvider: RoutingProvider,
+  resolvedVehicle: ResolvedVehicleSelection = {
+    source: 'custom',
+    vehicleCategory: request.vehicleCategory,
+    consumptionProfile: request.consumptionProfile,
+  },
+  error?: Error,
+): EstimateRouteCostService {
+  const resolver = {
+    resolve: vi.fn(() => {
+      if (error !== undefined) {
+        throw error;
+      }
+
+      return resolvedVehicle;
+    }),
+  } as unknown as ResolveVehicleSelectionService;
+
+  return new EstimateRouteCostService(routingProvider, resolver);
 }
 
 function routes() {

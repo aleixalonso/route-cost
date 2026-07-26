@@ -20,7 +20,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --sourcemap --clean",
-    "dev": "tsup src/index.ts --format esm,cjs --dts --sourcemap --clean --watch",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --sourcemap --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
