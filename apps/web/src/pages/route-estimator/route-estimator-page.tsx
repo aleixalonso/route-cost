@@ -1,14 +1,11 @@
 import type {
   EstimateRouteCostResponse,
-  VehicleRoutingCategory,
   VehicleSummary,
 } from '@route-cost/contracts';
-import { consumptionProfileSchema } from '@route-cost/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import type { z } from 'zod';
 
 import {
   type LocationAttribution,
@@ -17,7 +14,6 @@ import {
 } from '../../features/location-search';
 import { buildRouteCostEstimateRequest } from '../../features/route-cost-form/lib/build-route-cost-estimate-request';
 import { postRouteCostEstimate } from '../../features/route-cost-form/lib/route-cost-api';
-import type { RouteEstimatorFormValues } from '../../features/route-cost-form/model/route-estimator-form';
 import { RouteCostResults } from '../../features/route-cost-results';
 import {
   vehicleCategoryLabels,
@@ -34,43 +30,22 @@ import {
   Select,
   Surface,
 } from '../../shared/components';
-
-type VehicleMode = 'catalog' | 'custom';
-type ConsumptionProfile = z.infer<typeof consumptionProfileSchema>;
-
-interface RouteEstimatorUiFormValues {
-  readonly origin: SelectedLocation | null;
-  readonly destination: SelectedLocation | null;
-  readonly vehicleSelect: string;
-  readonly vehicleCategory: VehicleRoutingCategory;
-  readonly urbanLitresPer100Km: number;
-  readonly interurbanLitresPer100Km: number;
-  readonly motorwayLitresPer100Km: number;
-  readonly unknownLitresPer100Km: number;
-  readonly fuelPrice: number;
-}
-
-type FieldErrors = {
-  [K in keyof RouteEstimatorUiFormValues | 'sameRoute']?: string | undefined;
-};
+import {
+  getFirstInvalidRegisteredField,
+  getVehicleMode,
+  routeEstimatorDefaultValues,
+  type RouteEstimatorFieldErrors,
+  type RouteEstimatorUiFormValues,
+  validateRouteEstimatorForm,
+} from './route-estimator-flow';
 
 export function RouteEstimatorPage() {
   const { control, register, handleSubmit, setValue, setFocus, getValues } =
     useForm<RouteEstimatorUiFormValues>({
-      defaultValues: {
-        origin: null,
-        destination: null,
-        vehicleSelect: '',
-        vehicleCategory: 'maxi-scooter',
-        urbanLitresPer100Km: 3.8,
-        interurbanLitresPer100Km: 3,
-        motorwayLitresPer100Km: 4.1,
-        unknownLitresPer100Km: 3.4,
-        fuelPrice: Number.NaN,
-      },
+      defaultValues: routeEstimatorDefaultValues,
     });
   const [vehicles, setVehicles] = useState<readonly VehicleSummary[]>([]);
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [fieldErrors, setFieldErrors] = useState<RouteEstimatorFieldErrors>({});
   const [lastResult, setLastResult] =
     useState<EstimateRouteCostResponse | null>(null);
   const [lastRouteLocations, setLastRouteLocations] = useState<{
@@ -82,8 +57,7 @@ export function RouteEstimatorPage() {
   );
 
   const vehicleSelect = useWatch({ control, name: 'vehicleSelect' });
-  const vehicleMode: VehicleMode =
-    vehicleSelect === 'custom' ? 'custom' : 'catalog';
+  const vehicleMode = getVehicleMode(vehicleSelect);
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === vehicleSelect) ?? null,
     [vehicleSelect, vehicles],
@@ -92,11 +66,16 @@ export function RouteEstimatorPage() {
   const routeCostMutation = useMutation({ mutationFn: postRouteCostEstimate });
 
   const submit = handleSubmit((values) => {
-    const validation = validateForm(values);
+    const validation = validateRouteEstimatorForm(values);
     setFieldErrors(validation.errors);
 
     if (validation.values === null) {
-      focusFirstInvalidField(validation.errors, setFocus);
+      const field = getFirstInvalidRegisteredField(validation.errors);
+
+      if (field !== null) {
+        setFocus(field);
+      }
+
       return;
     }
 
@@ -364,135 +343,4 @@ function ConsumptionInput({
       {error === undefined ? null : <FieldError>{error}</FieldError>}
     </Field>
   );
-}
-
-function validateForm(values: RouteEstimatorUiFormValues): {
-  readonly values: RouteEstimatorFormValues | null;
-  readonly errors: FieldErrors;
-} {
-  const errors: FieldErrors = {};
-
-  if (values.origin === null) {
-    errors.origin = 'Choose a resolved origin.';
-  }
-
-  if (values.destination === null) {
-    errors.destination = 'Choose a resolved destination.';
-  }
-
-  if (
-    values.origin !== null &&
-    values.destination !== null &&
-    values.origin.coordinate.latitude ===
-      values.destination.coordinate.latitude &&
-    values.origin.coordinate.longitude ===
-      values.destination.coordinate.longitude
-  ) {
-    errors.sameRoute = 'Origin and destination must be different.';
-  }
-
-  if (values.vehicleSelect.length === 0) {
-    errors.vehicleSelect = 'Choose a catalog vehicle or custom vehicle.';
-  }
-
-  if (!isPositiveFinite(values.fuelPrice)) {
-    errors.fuelPrice = 'Enter a positive fuel price.';
-  }
-
-  if (values.vehicleSelect === 'custom') {
-    validateConsumption(
-      values.urbanLitresPer100Km,
-      'urbanLitresPer100Km',
-      errors,
-    );
-    validateConsumption(
-      values.interurbanLitresPer100Km,
-      'interurbanLitresPer100Km',
-      errors,
-    );
-    validateConsumption(
-      values.motorwayLitresPer100Km,
-      'motorwayLitresPer100Km',
-      errors,
-    );
-    validateConsumption(
-      values.unknownLitresPer100Km,
-      'unknownLitresPer100Km',
-      errors,
-    );
-  }
-
-  if (Object.values(errors).some((message) => message !== undefined)) {
-    return { values: null, errors };
-  }
-
-  if (values.origin === null || values.destination === null) {
-    return { values: null, errors };
-  }
-
-  if (values.vehicleSelect === 'custom') {
-    const consumptionProfile: ConsumptionProfile = {
-      urbanLitresPer100Km: values.urbanLitresPer100Km,
-      interurbanLitresPer100Km: values.interurbanLitresPer100Km,
-      motorwayLitresPer100Km: values.motorwayLitresPer100Km,
-      unknownLitresPer100Km: values.unknownLitresPer100Km,
-    };
-
-    return {
-      values: {
-        mode: 'custom',
-        origin: values.origin,
-        destination: values.destination,
-        vehicleCategory: values.vehicleCategory,
-        consumptionProfile,
-        fuelPrice: values.fuelPrice,
-      },
-      errors,
-    };
-  }
-
-  return {
-    values: {
-      mode: 'catalog',
-      origin: values.origin,
-      destination: values.destination,
-      vehicleId: values.vehicleSelect,
-      fuelPrice: values.fuelPrice,
-    },
-    errors,
-  };
-}
-
-function validateConsumption(
-  value: number,
-  field: keyof Pick<
-    RouteEstimatorUiFormValues,
-    | 'urbanLitresPer100Km'
-    | 'interurbanLitresPer100Km'
-    | 'motorwayLitresPer100Km'
-    | 'unknownLitresPer100Km'
-  >,
-  errors: FieldErrors,
-): void {
-  if (!isPositiveFinite(value) || value > 100) {
-    errors[field] = 'Enter a consumption value between 0 and 100.';
-  }
-}
-
-function isPositiveFinite(value: number): boolean {
-  return Number.isFinite(value) && value > 0 && value <= 100;
-}
-
-function focusFirstInvalidField(
-  errors: FieldErrors,
-  setFocus: ReturnType<typeof useForm<RouteEstimatorUiFormValues>>['setFocus'],
-): void {
-  if (errors.vehicleSelect !== undefined) {
-    setFocus('vehicleSelect');
-    return;
-  }
-
-  if (errors.fuelPrice !== undefined) {
-    setFocus('fuelPrice');
-  }
 }
