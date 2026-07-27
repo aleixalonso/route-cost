@@ -20,6 +20,8 @@ const mockMarkerAddTo = vi.fn();
 const mapInstances: object[] = [];
 const markerInstances: object[] = [];
 let constructorThrows = false;
+let mapStartsLoaded = true;
+let loadHandler: (() => void) | null = null;
 
 vi.mock('maplibre-gl', () => {
   class MockMap {
@@ -39,14 +41,18 @@ vi.mock('maplibre-gl', () => {
     public addControl() {}
 
     public loaded() {
-      return true;
+      return mapStartsLoaded;
     }
 
     public isStyleLoaded() {
-      return true;
+      return mapStartsLoaded;
     }
 
-    public on() {}
+    public on(event: string, handler: () => void) {
+      if (event === 'load') {
+        loadHandler = handler;
+      }
+    }
 
     public off() {}
 
@@ -118,7 +124,11 @@ describe('RouteMap', () => {
     mapInstances.length = 0;
     markerInstances.length = 0;
     constructorThrows = false;
+    mapStartsLoaded = true;
+    loadHandler = null;
     globalThis.ResizeObserver = MockResizeObserver;
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(640);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(320);
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
       {} as RenderingContext,
     );
@@ -147,6 +157,26 @@ describe('RouteMap', () => {
     expect(screen.getByRole('region', { name: /Map showing/ })).toBeVisible();
     expect(screen.getByText('Urban')).toBeInTheDocument();
     expect(screen.getByText('Interurban not present')).toBeInTheDocument();
+  });
+
+  it('waits for style readiness before fitting the route', async () => {
+    mapStartsLoaded = false;
+
+    render(
+      <RouteMap
+        origin={origin}
+        destination={destination}
+        alternative={buildAlternative('primary', BARCELONA_ROUTE)}
+      />,
+    );
+
+    await waitFor(() => expect(mapInstances).toHaveLength(1));
+    expect(mockFitBounds).not.toHaveBeenCalled();
+
+    mapStartsLoaded = true;
+    loadHandler?.();
+
+    await waitFor(() => expect(mockFitBounds).toHaveBeenCalled());
   });
 
   it('rerenders and switches alternatives through source setData without a new map', async () => {

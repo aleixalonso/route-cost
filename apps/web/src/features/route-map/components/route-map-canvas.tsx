@@ -60,11 +60,16 @@ export function RouteMapCanvas({
     setContainerElement(element);
   }, []);
 
-  const fitRoute = useCallback(() => {
+  const fitRoute = useCallback((): boolean => {
     const map = mapRef.current;
+    const container = containerRef.current;
 
-    if (map === null) {
-      return;
+    if (map === null || container === null) {
+      return false;
+    }
+
+    if (container.clientWidth === 0 || container.clientHeight === 0) {
+      return false;
     }
 
     try {
@@ -74,15 +79,17 @@ export function RouteMapCanvas({
           zoom: 14,
           duration: 0,
         });
-        return;
+        return true;
       }
 
       map.fitBounds(toLngLatBounds(model.bounds), {
-        padding: getRoutePadding(containerRef.current),
+        padding: getRoutePadding(container),
         duration: 0,
       });
+      return true;
     } catch {
       onError();
+      return false;
     }
   }, [model.bounds, onError]);
 
@@ -189,12 +196,17 @@ export function RouteMapCanvas({
   }, [model.origin, model.destination, onError]);
 
   useEffect(() => {
+    if (styleReadyGeneration === 0) {
+      return;
+    }
+
     if (lastFittedAlternativeRef.current === model.alternativeId) {
       return;
     }
 
-    lastFittedAlternativeRef.current = model.alternativeId;
-    fitRoute();
+    if (fitRoute()) {
+      lastFittedAlternativeRef.current = model.alternativeId;
+    }
   }, [fitRoute, model.alternativeId, styleReadyGeneration]);
 
   useMapResize(containerElement, mapInstance, () => {
