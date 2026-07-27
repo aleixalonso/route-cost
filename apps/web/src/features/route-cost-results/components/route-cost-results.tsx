@@ -129,6 +129,22 @@ export function RouteCostResults({
         />
       </dl>
 
+      {routeLocations === null ? (
+        <section
+          className="grid min-h-64 place-items-center rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm font-semibold text-slate-600"
+          aria-label="Route map placeholder"
+        >
+          Calculate a route to display it on the map.
+        </section>
+      ) : (
+        <RouteMap
+          origin={routeLocations.origin}
+          destination={routeLocations.destination}
+          alternative={selectedAlternative}
+          isUpdating={isRecalculating}
+        />
+      )}
+
       <section className="grid gap-3" aria-labelledby="vehicle-result-heading">
         <h3
           id="vehicle-result-heading"
@@ -188,22 +204,6 @@ export function RouteCostResults({
           })}
         </div>
       </section>
-
-      {routeLocations === null ? (
-        <section
-          className="grid min-h-64 place-items-center rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm font-semibold text-slate-600"
-          aria-label="Route map placeholder"
-        >
-          Calculate a route to display it on the map.
-        </section>
-      ) : (
-        <RouteMap
-          origin={routeLocations.origin}
-          destination={routeLocations.destination}
-          alternative={selectedAlternative}
-          isUpdating={isRecalculating}
-        />
-      )}
     </Surface>
   );
 }

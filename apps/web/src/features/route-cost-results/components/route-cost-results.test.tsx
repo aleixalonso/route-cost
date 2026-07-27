@@ -84,6 +84,31 @@ describe('RouteCostResults', () => {
     expect(screen.getByText('Map alternative-1')).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /Alternative 1/ })).toHaveFocus();
   });
+
+  it('places the map between estimate metrics and vehicle profile', () => {
+    render(
+      <RouteCostResults result={result} routeLocations={routeLocations} />,
+    );
+
+    const costMetric = screen.getByText('Estimated cost').closest('div');
+    const map = screen.getByRole('region', { name: 'Route map' });
+    const vehicleHeading = screen.getByRole('heading', {
+      name: 'Vehicle profile',
+    });
+
+    if (costMetric === null) {
+      throw new Error('Estimated cost metric was not rendered.');
+    }
+
+    expect(
+      costMetric.compareDocumentPosition(map) &
+        globalThis.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      map.compareDocumentPosition(vehicleHeading) &
+        globalThis.Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });
 
 function buildAlternative(
