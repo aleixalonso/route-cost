@@ -24,7 +24,9 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: 'Calculate route' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Route map will appear here.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Calculate a route to display it on the map.'),
+    ).toBeInTheDocument();
   });
 
   it('shows vehicle loading state', () => {

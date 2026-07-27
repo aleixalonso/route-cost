@@ -5,6 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../test/render';
 import { RouteEstimatorPage } from './route-estimator-page';
 
+vi.mock('../../features/route-map', () => ({
+  RouteMap: () => (
+    <section aria-label="Route map">Route map test double</section>
+  ),
+}));
+
 const vehiclesResponse = {
   items: [
     {
@@ -50,14 +56,29 @@ const routeCostResponse = {
       id: 'primary',
       distanceMetres: 17_500,
       durationSeconds: 1620,
-      encodedPolyline: 'mock-polyline',
+      encodedPolyline: 'o~`}mA_hmcC_sN_|BoxO_uC',
       summary: {
         urbanDistanceMetres: 7500,
         interurbanDistanceMetres: 5000,
         motorwayDistanceMetres: 5000,
         unknownDistanceMetres: 0,
       },
-      segments: [],
+      segments: [
+        {
+          distanceMetres: 7500,
+          beginShapeIndex: 0,
+          endShapeIndex: 1,
+          roadCategory: 'urban',
+          classificationReason: 'urban-density',
+        },
+        {
+          distanceMetres: 5000,
+          beginShapeIndex: 1,
+          endShapeIndex: 2,
+          roadCategory: 'motorway',
+          classificationReason: 'road-class-motorway',
+        },
+      ],
       fuelEstimate: {
         breakdown: {
           urban: {

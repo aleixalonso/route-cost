@@ -183,7 +183,8 @@ describe('RouteCostEstimatesController HTTP', () => {
       id: 'primary',
       distanceMetres: 17_500,
       durationSeconds: 1620,
-      encodedPolyline: 'mock-polyline',
+      encodedPolyline:
+        'o~`}mA_hmcCqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eH',
       summary: {
         urbanDistanceMetres: 7_500,
         interurbanDistanceMetres: 5_000,
@@ -405,7 +406,13 @@ describe('RouteCostEstimatesController HTTP', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
-      alternatives: [{ id: 'primary', encodedPolyline: 'mock-polyline' }],
+      alternatives: [
+        {
+          id: 'primary',
+          encodedPolyline:
+            'o~`}mA_hmcCqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eH',
+        },
+      ],
     });
   });
 });

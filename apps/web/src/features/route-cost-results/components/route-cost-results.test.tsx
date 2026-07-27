@@ -1,9 +1,17 @@
 import type { EstimateRouteCostResponse } from '@route-cost/contracts';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { RouteCostResults } from './route-cost-results';
+
+vi.mock('../../route-map', () => ({
+  RouteMap: ({
+    alternative,
+  }: {
+    readonly alternative: EstimateRouteCostResponse['alternatives'][number];
+  }) => <section aria-label="Route map">Map {alternative.id}</section>,
+}));
 
 const result = {
   vehicle: {
@@ -21,6 +29,19 @@ const result = {
     buildAlternative('alternative-1', 14_000, 1500, 0.8),
   ],
 } satisfies EstimateRouteCostResponse;
+
+const routeLocations = {
+  origin: {
+    id: 'origin',
+    label: 'Plaça de Catalunya',
+    coordinate: { latitude: 41.387, longitude: 2.17 },
+  },
+  destination: {
+    id: 'destination',
+    label: 'Sagrada Família',
+    coordinate: { latitude: 41.4036, longitude: 2.1744 },
+  },
+};
 
 describe('RouteCostResults', () => {
   it('renders empty state', () => {
@@ -49,13 +70,19 @@ describe('RouteCostResults', () => {
 
   it('switches alternatives without fetching', async () => {
     const user = userEvent.setup();
-    render(<RouteCostResults result={result} />);
+    render(
+      <RouteCostResults result={result} routeLocations={routeLocations} />,
+    );
+
+    expect(screen.getByText('Map primary')).toBeInTheDocument();
 
     await user.click(screen.getByRole('radio', { name: /Alternative 1/ }));
 
     expect(screen.getByText('14 km')).toBeInTheDocument();
     expect(screen.getByText('25 min')).toBeInTheDocument();
     expect(screen.getAllByText(/0,80\s€/).length).toBeGreaterThan(0);
+    expect(screen.getByText('Map alternative-1')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Alternative 1/ })).toHaveFocus();
   });
 });
 
@@ -69,7 +96,8 @@ function buildAlternative(
     id,
     distanceMetres,
     durationSeconds,
-    encodedPolyline: `polyline-${id}`,
+    encodedPolyline:
+      id === 'primary' ? 'o~`}mA_hmcC_sN_|BoxO_uC' : 'o~`}mA_hmcCozDo}@_qYosE',
     summary: {
       urbanDistanceMetres: 7500,
       interurbanDistanceMetres: 5000,

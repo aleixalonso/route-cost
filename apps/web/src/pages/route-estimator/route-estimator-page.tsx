@@ -73,6 +73,10 @@ export function RouteEstimatorPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [lastResult, setLastResult] =
     useState<EstimateRouteCostResponse | null>(null);
+  const [lastRouteLocations, setLastRouteLocations] = useState<{
+    readonly origin: SelectedLocation;
+    readonly destination: SelectedLocation;
+  } | null>(null);
   const [attribution, setAttribution] = useState<LocationAttribution | null>(
     null,
   );
@@ -85,12 +89,7 @@ export function RouteEstimatorPage() {
     [vehicleSelect, vehicles],
   );
 
-  const routeCostMutation = useMutation({
-    mutationFn: postRouteCostEstimate,
-    onSuccess: (result) => {
-      setLastResult(result);
-    },
-  });
+  const routeCostMutation = useMutation({ mutationFn: postRouteCostEstimate });
 
   const submit = handleSubmit((values) => {
     const validation = validateForm(values);
@@ -101,8 +100,17 @@ export function RouteEstimatorPage() {
       return;
     }
 
-    const request = buildRouteCostEstimateRequest(validation.values);
-    routeCostMutation.mutate(request);
+    const validValues = validation.values;
+    const request = buildRouteCostEstimateRequest(validValues);
+    routeCostMutation.mutate(request, {
+      onSuccess: (result) => {
+        setLastResult(result);
+        setLastRouteLocations({
+          origin: validValues.origin,
+          destination: validValues.destination,
+        });
+      },
+    });
   });
 
   function swapLocations(): void {
@@ -311,14 +319,17 @@ export function RouteEstimatorPage() {
       <section className="grid gap-4 lg:content-start">
         <RouteCostResults
           result={lastResult}
+          routeLocations={lastRouteLocations}
           isRecalculating={routeCostMutation.isPending && lastResult !== null}
         />
-        <section
-          className="grid min-h-64 place-items-center rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm font-semibold text-slate-600"
-          aria-label="Future map area"
-        >
-          Route map will appear here.
-        </section>
+        {lastResult === null ? (
+          <section
+            className="grid min-h-64 place-items-center rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm font-semibold text-slate-600"
+            aria-label="Route map placeholder"
+          >
+            Calculate a route to display it on the map.
+          </section>
+        ) : null}
       </section>
     </main>
   );

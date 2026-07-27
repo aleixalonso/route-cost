@@ -20,12 +20,19 @@ export class MockRoutingProvider implements RoutingProvider {
   }
 }
 
+const PRIMARY_ENCODED_POLYLINE =
+  'o~`}mA_hmcCqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eHqa@eHsa@cHqa@eH';
+const ALTERNATIVE_POLYLINES = [
+  'o~`}mA_hmcCyYiUwYiUyYiUwYkUyYiUwYiUyYiUyYiUwYiUyYiUwYkUyYiUwYiUyYiUyYiUwYiUyYiUwYkUyYiUwYiUyYiUyYiUwYiUyYiUwYkUyYiUwYiUyYiU',
+  'o~`}mA_hmcCeg@hUeg@hUeg@hUcg@jUeg@hUeg@hUeg@hUeg@hUeg@hUeg@hUcg@jUeg@hUeg@hUeg@hUeg@hUeg@hUeg@hUcg@jUeg@hUeg@hUeg@hUeg@hUeg@hUeg@hUcg@jUeg@hUeg@hU',
+] as const;
+
 function buildPrimaryRoute(request: RoutingRequest): RouteAlternative {
   return {
     id: 'primary',
     distanceMetres: 17_500,
     durationSeconds: 1620,
-    encodedPolyline: 'mock-polyline',
+    encodedPolyline: PRIMARY_ENCODED_POLYLINE,
     segments: [
       {
         distanceMetres: 7_500,
@@ -70,7 +77,9 @@ function buildRequestedAlternatives(count: number): RouteAlternative[] {
     id: `alternative-${index + 1}`,
     distanceMetres: 14_000 + index * 1_000,
     durationSeconds: 1500 + index * 120,
-    encodedPolyline: `mock-polyline-alternative-${index + 1}`,
+    encodedPolyline:
+      ALTERNATIVE_POLYLINES[index % ALTERNATIVE_POLYLINES.length] ??
+      PRIMARY_ENCODED_POLYLINE,
     segments: [
       {
         distanceMetres: 4_000 + index * 500,

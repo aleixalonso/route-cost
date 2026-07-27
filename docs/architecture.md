@@ -48,6 +48,7 @@ apps/web/src/features/location-search
 apps/web/src/features/vehicle-selection
 apps/web/src/features/route-cost-form
 apps/web/src/features/route-cost-results
+apps/web/src/features/route-map
 apps/web/src/shared/api
 apps/web/src/shared/components
 apps/web/src/shared/lib
@@ -70,7 +71,43 @@ Vehicle mode is represented as a discriminated union at the submit boundary. Cat
 
 Results stay in page memory and are not persisted to local storage, session storage, cookies, or the URL. Distances, durations, litres, consumption rates, and EUR money are formatted in the frontend with `es-ES`.
 
-The map is intentionally not implemented in this milestone. A bounded placeholder marks the future map region.
+The route map visualizes only the selected route alternative returned by the backend:
+
+```text
+Selected route alternative
+   |
+   v
+Geometry decoder
+   |
+   v
+Provider-neutral route coordinates
+   |
+   |-- Full route GeoJSON
+   |-- Categorized segment GeoJSON
+   `-- Route bounds
+          |
+          v
+      RouteMapCanvas
+          |
+          v
+       MapLibre
+```
+
+The route-map feature may depend on shared contracts, shared frontend components/utilities, and MapLibre. It must not depend on backend provider models or route calculation logic:
+
+```text
+route-map feature
+-> shared contracts
+-> shared components
+-> MapLibre
+
+route-map never -> backend provider models
+route-map never -> route calculation logic
+```
+
+MapLibre is initialized lazily after a successful route result exists. The frontend decodes Valhalla polyline6 geometry, converts latitude/longitude coordinates to GeoJSON longitude/latitude order at the GeoJSON boundary, slices categorized segments with backend inclusive shape-point indexes, and fits the selected route bounds. It does not calculate routes, classify roads, snap geometry, or request map-provider routes.
+
+`VITE_MAP_STYLE_URL` configures the MapLibre-compatible style exposed to the browser. The default local `/map-style.json` contains no external tile source and keeps automated tests deterministic.
 
 ## Routing
 

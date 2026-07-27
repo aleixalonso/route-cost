@@ -29,9 +29,32 @@ Frontend flow:
 3. Select a catalog or custom vehicle.
 4. Enter fuel price.
 5. Calculate.
-6. Review route and cost estimates.
+6. View summary.
+7. View route map.
+8. Switch alternatives when available.
 
-The first frontend flow is optimized mobile-first and does not include a route map yet. Mock providers are the default, so local development works without live provider credentials.
+The frontend flow is optimized mobile-first. Mock API providers are the default, so local development works without live routing or geocoding credentials.
+
+## Map Style Configuration
+
+The route map uses MapLibre GL JS directly. Configure the browser-visible map style with:
+
+```dotenv
+VITE_MAP_STYLE_URL=<maplibre-compatible-style-url>
+```
+
+The default local value is `/map-style.json`, a deterministic blank style used for development and automated tests. Production should use a MapLibre-compatible style and tile source whose terms permit the intended public browser usage.
+
+Do not reuse backend server secrets, Valhalla keys, or geocoding keys as frontend map tokens. Any value in `VITE_MAP_STYLE_URL` is exposed to the browser.
+
+The route legend categories are:
+
+```text
+Urban
+Interurban
+Motorway
+Unknown
+```
 
 ## Local URLs
 
@@ -178,6 +201,7 @@ Routing endpoints continue accepting coordinates rather than free-form address t
   - `src/features/vehicle-selection`: API-backed native vehicle selection
   - `src/features/route-cost-form`: form request mapping and submission
   - `src/features/route-cost-results`: estimate rendering and alternatives
+  - `src/features/route-map`: selected route visualization with MapLibre
   - `src/shared/components`: native primitives whose styling is intrinsic only
   - `src/shared/api`: native fetch client and typed API errors
 - `apps/api`: NestJS API on Fastify
@@ -220,6 +244,12 @@ The mock provider is the default and requires no network access:
 ```dotenv
 ROUTING_PROVIDER=mock
 GEOCODING_PROVIDER=mock
+```
+
+The web map style is browser configuration and must be safe to expose:
+
+```dotenv
+VITE_MAP_STYLE_URL=/map-style.json
 ```
 
 The Valhalla provider uses Stadia Maps EU and requires server-side credentials:

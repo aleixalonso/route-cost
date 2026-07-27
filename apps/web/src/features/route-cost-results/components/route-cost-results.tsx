@@ -7,6 +7,8 @@ import { formatDistanceMetres } from '../../../shared/lib/format-distance';
 import { formatDurationSeconds } from '../../../shared/lib/format-duration';
 import { formatLitres } from '../../../shared/lib/format-litres';
 import { formatMoney } from '../../../shared/lib/format-money';
+import type { SelectedLocation } from '../../location-search';
+import { RouteMap } from '../../route-map';
 
 const categoryOrder = ['urban', 'interurban', 'motorway', 'unknown'] as const;
 const categoryLabels = {
@@ -18,11 +20,16 @@ const categoryLabels = {
 
 export interface RouteCostResultsProps {
   readonly result: EstimateRouteCostResponse | null;
+  readonly routeLocations?: {
+    readonly origin: SelectedLocation;
+    readonly destination: SelectedLocation;
+  } | null;
   readonly isRecalculating?: boolean;
 }
 
 export function RouteCostResults({
   result,
+  routeLocations = null,
   isRecalculating = false,
 }: RouteCostResultsProps) {
   const [selectedAlternativeId, setSelectedAlternativeId] = useState<
@@ -181,6 +188,22 @@ export function RouteCostResults({
           })}
         </div>
       </section>
+
+      {routeLocations === null ? (
+        <section
+          className="grid min-h-64 place-items-center rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm font-semibold text-slate-600"
+          aria-label="Route map placeholder"
+        >
+          Calculate a route to display it on the map.
+        </section>
+      ) : (
+        <RouteMap
+          origin={routeLocations.origin}
+          destination={routeLocations.destination}
+          alternative={selectedAlternative}
+          isUpdating={isRecalculating}
+        />
+      )}
     </Surface>
   );
 }
