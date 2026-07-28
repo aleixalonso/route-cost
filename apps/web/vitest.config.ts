@@ -9,6 +9,10 @@ export default defineConfig({
         '../../packages/contracts/src/index.ts',
         import.meta.url,
       ).pathname,
+      '@route-cost/fuel-prices': new URL(
+        '../../packages/fuel-prices/src/index.ts',
+        import.meta.url,
+      ).pathname,
     },
   },
   test: {

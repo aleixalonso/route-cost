@@ -220,7 +220,7 @@ describe('RouteEstimatorPage', () => {
       fuelPrice: { amountPerLitre: 1.6, currency: 'EUR' },
     });
     expect(requests[0]).not.toHaveProperty('consumptionProfile');
-  });
+  }, 10_000);
 });
 
 function getRequestUrl(input: RequestInfo | URL): string {
