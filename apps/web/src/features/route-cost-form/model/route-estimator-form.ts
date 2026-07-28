@@ -1,4 +1,7 @@
-import type { VehicleRoutingCategory } from '@route-cost/contracts';
+import type {
+  FuelProduct,
+  VehicleRoutingCategory,
+} from '@route-cost/contracts';
 import { consumptionProfileSchema } from '@route-cost/contracts';
 import type { z } from 'zod';
 
@@ -14,6 +17,7 @@ export type VehicleSelection =
   | {
       readonly mode: 'custom';
       readonly vehicleCategory: VehicleRoutingCategory;
+      readonly fuelProduct?: FuelProduct;
       readonly consumptionProfile: ConsumptionProfile;
     };
 

@@ -1,3 +1,4 @@
+export * from './fuel-prices/index.js';
 export * from './health/health.contract.js';
 export * from './locations/index.js';
 export * from './route/coordinates.schema.js';

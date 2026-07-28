@@ -27,13 +27,25 @@ Frontend flow:
 1. Select origin.
 2. Select destination.
 3. Select a catalog or custom vehicle.
-4. Enter fuel price.
+4. Review the suggested nearby fuel price when available, or enter fuel price manually.
 5. Calculate.
 6. View summary.
 7. View route map.
 8. Switch alternatives when available.
 
 The frontend flow is optimized mobile-first. Mock API providers are the default, so local development works without live routing or geocoding credentials.
+
+Fuel-price suggestions use:
+
+```text
+origin coordinate
++ vehicle or fuel product
+-> automatic country resolution
+-> country provider lookup
+-> nearby median price suggestion
+```
+
+Spain is currently supported. Other countries fall back to manual entry. The suggestion is a nearby median, not the cheapest guaranteed station price, and the fuel-price field remains editable. Manual values are not unexpectedly overwritten.
 
 ## Map Style Configuration
 
@@ -91,6 +103,26 @@ curl \
   }' \
   http://localhost:3001/api/v1/route-cost-estimates
 ```
+
+## Fuel Price Suggestions
+
+`POST /api/v1/fuel-price-suggestions` suggests a nearby fuel price. Send either a catalog `vehicleId` or an explicit `fuelProduct`; do not send `countryCode`. The backend resolves the country from the coordinate.
+
+```bash
+curl \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --data '{
+    "coordinate": {
+      "latitude": 41.387,
+      "longitude": 2.170
+    },
+    "vehicleId": "honda-forza-350-2025"
+  }' \
+  http://localhost:3001/api/v1/fuel-price-suggestions
+```
+
+Supported fuel products are `petrol-95-e5` and `diesel-a`. `FUEL_PRICE_PROVIDER_MODE=mock` requires no live source. `live` mode uses the official Spanish fuel-price REST JSON source and a process-local snapshot cache.
 
 Custom mode:
 
@@ -191,6 +223,7 @@ Routing endpoints continue accepting coordinates rather than free-form address t
 - `pnpm test`, `pnpm test:coverage`, `pnpm test:integration`, `pnpm test:e2e`: run test layers
 - `pnpm routing:verify`: manually verify the live Valhalla integration when `VALHALLA_API_KEY` is set
 - `pnpm geocoding:verify`: manually verify the live Stadia geocoding integration when `STADIA_GEOCODING_API_KEY` is set
+- `pnpm fuel-prices:verify:spain`: manually verify the live Spanish fuel-price source
 - `pnpm docker:up`, `pnpm docker:smoke`, `pnpm docker:down`: build, smoke-test, and stop Compose
 
 ## Structure
@@ -208,6 +241,7 @@ Routing endpoints continue accepting coordinates rather than free-form address t
 - `apps/e2e`: Playwright browser tests
 - `packages/domain`: pure business logic
 - `packages/contracts`: Zod HTTP contracts
+- `packages/fuel-prices`: provider-neutral fuel-price models, registry, distance, nearby selection, and suggestion logic
 - `packages/geocoding`: provider-neutral geocoding abstraction
 - `packages/routing`: provider-neutral routing abstraction
 - `packages/vehicle-data`: static curated vehicle catalog with provenance metadata

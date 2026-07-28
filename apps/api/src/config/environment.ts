@@ -53,6 +53,36 @@ const environmentSchema = z
       .min(1)
       .max(10)
       .default(10),
+    FUEL_PRICE_PROVIDER_MODE: z.enum(['mock', 'live']).default('mock'),
+    SPAIN_FUEL_PRICE_SOURCE_URL: z
+      .string()
+      .url()
+      .default(
+        'https://energia.serviciosmin.gob.es/ServiciosRestCarburantes/PreciosCarburantes/EstacionesTerrestres/',
+      ),
+    SPAIN_FUEL_PRICES_REQUEST_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(10_000),
+    SPAIN_FUEL_PRICES_CACHE_TTL_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(1_800_000),
+    SPAIN_FUEL_PRICES_STALE_IF_ERROR_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(21_600_000),
+    FUEL_PRICE_RADIUS_STEPS_METRES: z.string().default('5000,10000,25000'),
+    FUEL_PRICE_MIN_STATION_COUNT: z.coerce.number().int().min(1).default(5),
+    FUEL_PRICE_MAX_STATION_COUNT: z.coerce.number().int().min(1).default(30),
+    FUEL_PRICE_MAX_DATA_AGE_HOURS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(72),
   })
   .superRefine((environment, context) => {
     if (
@@ -89,10 +119,57 @@ const environmentSchema = z
         path: ['STADIA_GEOCODING_DEFAULT_LIMIT'],
       });
     }
+
+    const radiusSteps = parseRadiusSteps(
+      environment.FUEL_PRICE_RADIUS_STEPS_METRES,
+    );
+
+    if (radiusSteps.length === 0) {
+      context.addIssue({
+        code: 'custom',
+        message: 'FUEL_PRICE_RADIUS_STEPS_METRES must contain radius steps.',
+        path: ['FUEL_PRICE_RADIUS_STEPS_METRES'],
+      });
+    }
+
+    let previousRadiusStep = 0;
+
+    for (const radiusStep of radiusSteps) {
+      if (radiusStep <= previousRadiusStep || radiusStep > 100_000) {
+        context.addIssue({
+          code: 'custom',
+          message:
+            'FUEL_PRICE_RADIUS_STEPS_METRES must be strictly increasing and at most 100000.',
+          path: ['FUEL_PRICE_RADIUS_STEPS_METRES'],
+        });
+        break;
+      }
+
+      previousRadiusStep = radiusStep;
+    }
+
+    if (
+      environment.FUEL_PRICE_MAX_STATION_COUNT <
+      environment.FUEL_PRICE_MIN_STATION_COUNT
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message:
+          'FUEL_PRICE_MAX_STATION_COUNT must be greater than or equal to FUEL_PRICE_MIN_STATION_COUNT.',
+        path: ['FUEL_PRICE_MAX_STATION_COUNT'],
+      });
+    }
   });
 
 export type Environment = z.infer<typeof environmentSchema>;
 
 export function validateEnvironment(values: NodeJS.ProcessEnv): Environment {
   return environmentSchema.parse(values);
+}
+
+export function parseRadiusSteps(value: string): readonly number[] {
+  return value
+    .split(',')
+    .map((part) => Number(part.trim()))
+    .filter((part) => Number.isInteger(part) && part > 0);
 }

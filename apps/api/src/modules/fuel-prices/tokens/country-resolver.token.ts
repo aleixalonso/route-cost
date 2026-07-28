@@ -1,0 +1,1 @@
+export const COUNTRY_RESOLVER = Symbol('COUNTRY_RESOLVER');

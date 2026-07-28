@@ -23,6 +23,7 @@
     "test:e2e": "turbo test:e2e",
     "routing:verify": "tsx --tsconfig scripts/tsconfig.verify.json scripts/verify-valhalla-routing.mts",
     "geocoding:verify": "tsx --tsconfig scripts/tsconfig.verify.json scripts/verify-stadia-geocoding.mts",
+    "fuel-prices:verify:spain": "tsx --tsconfig scripts/tsconfig.verify.json scripts/verify-spain-fuel-prices.mts",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build",
     "setup": "node scripts/setup.mjs",
     "docker:build": "docker compose build",

@@ -30,6 +30,7 @@
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true}); require('fs').rmSync('coverage',{recursive:true,force:true});\""
   },
   "dependencies": {
+    "@route-cost/fuel-prices": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

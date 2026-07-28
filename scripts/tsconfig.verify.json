@@ -5,6 +5,7 @@
     "paths": {
       "@route-cost/contracts": ["packages/contracts/src/index.ts"],
       "@route-cost/domain": ["packages/domain/src/index.ts"],
+      "@route-cost/fuel-prices": ["packages/fuel-prices/src/index.ts"],
       "@route-cost/geocoding": ["packages/geocoding/src/index.ts"],
       "@route-cost/routing": ["packages/routing/src/index.ts"],
       "@route-cost/vehicle-data": ["packages/vehicle-data/src/index.ts"]

@@ -9,12 +9,14 @@ web -> domain when logic is reusable and safe for the client
 api -> contracts
 api -> domain
 api -> geocoding
+api -> fuel-prices
 api -> routing
 api -> vehicle-data
 
 routing -> contracts or domain when necessary
 vehicle-data -> domain/contracts
 contracts -> shared schemas where appropriate
+contracts -> fuel-prices for normalized fuel product constants
 
 packages never -> apps
 web never -> api
@@ -22,6 +24,8 @@ api never -> web
 geocoding never -> api
 geocoding never -> contracts unless current package layering explicitly permits it
 geocoding never -> Stadia-specific models
+fuel-prices never -> api
+fuel-prices never -> country-specific provider source formats
 ```
 
 Packages expose public APIs through `src/index.ts`. Applications must not deep-import another app.
@@ -118,6 +122,20 @@ The API registers the provider behind the `ROUTING_PROVIDER` injection token:
 ```dotenv
 ROUTING_PROVIDER=mock
 ```
+
+## Fuel Price Suggestions
+
+`@route-cost/fuel-prices` owns provider-neutral fuel products, station price models, country provider registry, haversine distance calculation, progressive nearby station selection, and median suggestion calculation. It has no NestJS, Fastify, React, environment, geocoding provider, or Spain source dependency.
+
+The API module resolves:
+
+```text
+origin coordinate -> CountryResolver -> ISO country code -> registry -> provider
+```
+
+Country resolution uses the existing reverse-geocoding provider abstraction. Clients do not send country codes. The central suggestion service depends on `COUNTRY_RESOLVER` and `COUNTRY_FUEL_PRICE_PROVIDER_REGISTRY`, so country-specific adapters are hidden behind provider interfaces.
+
+Spain is registered as `ES`. Its adapter owns official REST JSON retrieval, Spanish field names, comma-decimal parsing, WGS84 coordinate parsing, normalized station snapshots, and process-local cache behavior. Unsupported countries return structured `200 OK` availability responses so route-cost calculation can continue with manual price input.
 
 selects the deterministic mock provider and requires no network access.
 

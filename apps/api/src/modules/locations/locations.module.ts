@@ -70,6 +70,7 @@ import { LocationsController } from './presentation/locations.controller';
           : mockGeocodingProvider,
     },
   ],
+  exports: [GEOCODING_PROVIDER],
 })
 export class LocationsModule {}
 
@@ -141,6 +142,41 @@ function getEnvironment(
     ),
     STADIA_GEOCODING_MAX_LIMIT: configService.get(
       'STADIA_GEOCODING_MAX_LIMIT',
+      { infer: true },
+    ),
+    FUEL_PRICE_PROVIDER_MODE: configService.get('FUEL_PRICE_PROVIDER_MODE', {
+      infer: true,
+    }),
+    SPAIN_FUEL_PRICE_SOURCE_URL: configService.get(
+      'SPAIN_FUEL_PRICE_SOURCE_URL',
+      { infer: true },
+    ),
+    SPAIN_FUEL_PRICES_REQUEST_TIMEOUT_MS: configService.get(
+      'SPAIN_FUEL_PRICES_REQUEST_TIMEOUT_MS',
+      { infer: true },
+    ),
+    SPAIN_FUEL_PRICES_CACHE_TTL_MS: configService.get(
+      'SPAIN_FUEL_PRICES_CACHE_TTL_MS',
+      { infer: true },
+    ),
+    SPAIN_FUEL_PRICES_STALE_IF_ERROR_MS: configService.get(
+      'SPAIN_FUEL_PRICES_STALE_IF_ERROR_MS',
+      { infer: true },
+    ),
+    FUEL_PRICE_RADIUS_STEPS_METRES: configService.get(
+      'FUEL_PRICE_RADIUS_STEPS_METRES',
+      { infer: true },
+    ),
+    FUEL_PRICE_MIN_STATION_COUNT: configService.get(
+      'FUEL_PRICE_MIN_STATION_COUNT',
+      { infer: true },
+    ),
+    FUEL_PRICE_MAX_STATION_COUNT: configService.get(
+      'FUEL_PRICE_MAX_STATION_COUNT',
+      { infer: true },
+    ),
+    FUEL_PRICE_MAX_DATA_AGE_HOURS: configService.get(
+      'FUEL_PRICE_MAX_DATA_AGE_HOURS',
       { infer: true },
     ),
   };

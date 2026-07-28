@@ -1,4 +1,7 @@
-import type { VehicleRoutingCategory } from '@route-cost/contracts';
+import type {
+  FuelProduct,
+  VehicleRoutingCategory,
+} from '@route-cost/contracts';
 import { consumptionProfileSchema } from '@route-cost/contracts';
 import type { z } from 'zod';
 
@@ -14,6 +17,7 @@ export interface RouteEstimatorUiFormValues {
   readonly destination: SelectedLocation | null;
   readonly vehicleSelect: string;
   readonly vehicleCategory: VehicleRoutingCategory;
+  readonly fuelProduct: FuelProduct | '';
   readonly urbanLitresPer100Km: number;
   readonly interurbanLitresPer100Km: number;
   readonly motorwayLitresPer100Km: number;
@@ -32,6 +36,7 @@ export const routeEstimatorDefaultValues: RouteEstimatorUiFormValues = {
   destination: null,
   vehicleSelect: '',
   vehicleCategory: 'maxi-scooter',
+  fuelProduct: '',
   urbanLitresPer100Km: 3.8,
   interurbanLitresPer100Km: 3,
   motorwayLitresPer100Km: 4.1,
@@ -123,6 +128,9 @@ export function validateRouteEstimatorForm(
         origin: values.origin,
         destination: values.destination,
         vehicleCategory: values.vehicleCategory,
+        ...(values.fuelProduct === ''
+          ? {}
+          : { fuelProduct: values.fuelProduct }),
         consumptionProfile,
         fuelPrice: values.fuelPrice,
       },

@@ -29,6 +29,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@route-cost/contracts": "workspace:*",
     "@route-cost/domain": "workspace:*",
+    "@route-cost/fuel-prices": "workspace:*",
     "@route-cost/geocoding": "workspace:*",
     "@route-cost/routing": "workspace:*",
     "@route-cost/vehicle-data": "workspace:*",
