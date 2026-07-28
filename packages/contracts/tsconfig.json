@@ -1,5 +1,10 @@
 {
   "extends": "../typescript-config/library.json",
+  "compilerOptions": {
+    "paths": {
+      "@route-cost/fuel-prices": ["../fuel-prices/src/index.ts"]
+    }
+  },
   "include": ["src/**/*.ts", "vitest.config.ts"],
   "exclude": ["dist", "coverage"]
 }
