@@ -2,7 +2,8 @@
   "extends": "../typescript-config/library.json",
   "compilerOptions": {
     "paths": {
-      "@route-cost/contracts": ["../contracts/src/index.ts"]
+      "@route-cost/contracts": ["../contracts/src/index.ts"],
+      "@route-cost/fuel-prices": ["../fuel-prices/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "vitest.config.ts"],
