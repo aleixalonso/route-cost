@@ -1,6 +1,11 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@route-cost/fuel-prices': '../../packages/fuel-prices/src/index.ts',
+    },
+  },
   test: {
     environment: 'node',
     coverage: {
