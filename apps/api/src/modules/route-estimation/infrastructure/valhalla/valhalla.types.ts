@@ -85,7 +85,7 @@ type ValhallaEnvironment = Pick<
 >;
 
 export function toValhallaConfig(
-  environment: ValhallaEnvironment & Record<string, unknown>,
+  environment: ValhallaEnvironment,
 ): ValhallaConfig {
   return {
     baseUrl: environment.VALHALLA_BASE_URL,

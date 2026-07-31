@@ -30,8 +30,22 @@ export type StadiaFullLocationResponse = z.infer<
 >;
 export type StadiaErrorResponse = z.infer<typeof stadiaErrorResponseSchema>;
 
+type StadiaGeocodingEnvironment = Pick<
+  Environment,
+  | 'STADIA_GEOCODING_BASE_URL'
+  | 'STADIA_GEOCODING_AUTOCOMPLETE_PATH'
+  | 'STADIA_GEOCODING_SEARCH_PATH'
+  | 'STADIA_GEOCODING_PLACE_DETAILS_PATH'
+  | 'STADIA_GEOCODING_REVERSE_PATH'
+  | 'STADIA_GEOCODING_API_KEY'
+  | 'STADIA_GEOCODING_CLIENT_ID'
+  | 'STADIA_GEOCODING_REQUEST_TIMEOUT_MS'
+  | 'STADIA_GEOCODING_DEFAULT_LIMIT'
+  | 'STADIA_GEOCODING_MAX_LIMIT'
+>;
+
 export function toStadiaGeocodingConfig(
-  environment: Environment,
+  environment: StadiaGeocodingEnvironment,
 ): StadiaGeocodingConfig {
   return {
     baseUrl: environment.STADIA_GEOCODING_BASE_URL,

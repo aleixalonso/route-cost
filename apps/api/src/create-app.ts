@@ -8,10 +8,10 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
-import { validateEnvironment } from './config/environment';
+import type { Environment } from './config/environment';
+import { ENVIRONMENT } from './config/environment.token';
 
 export async function createApp(): Promise<NestFastifyApplication> {
-  const environment = validateEnvironment(process.env);
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
@@ -21,6 +21,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
       bufferLogs: true,
     },
   );
+  const environment = app.get<Environment>(ENVIRONMENT);
 
   await app.register(helmet);
   app.enableCors({

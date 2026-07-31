@@ -109,8 +109,16 @@ export class SuggestFuelPriceService {
   }
 }
 
+export type FuelPriceSearchEnvironment = Pick<
+  Environment,
+  | 'FUEL_PRICE_RADIUS_STEPS_METRES'
+  | 'FUEL_PRICE_MIN_STATION_COUNT'
+  | 'FUEL_PRICE_MAX_STATION_COUNT'
+  | 'FUEL_PRICE_MAX_DATA_AGE_HOURS'
+>;
+
 export function toFuelPriceSearchConfig(
-  environment: Environment,
+  environment: FuelPriceSearchEnvironment,
 ): FuelPriceSearchConfig {
   return {
     radiusStepsMetres: parseRadiusSteps(

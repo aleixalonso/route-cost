@@ -1,11 +1,12 @@
 import 'reflect-metadata';
 
-import { validateEnvironment } from './config/environment';
+import type { Environment } from './config/environment';
+import { ENVIRONMENT } from './config/environment.token';
 import { createApp } from './create-app';
 
 async function bootstrap(): Promise<void> {
-  const environment = validateEnvironment(process.env);
   const app = await createApp();
+  const environment = app.get<Environment>(ENVIRONMENT);
   await app.listen(environment.PORT, environment.HOST);
 }
 

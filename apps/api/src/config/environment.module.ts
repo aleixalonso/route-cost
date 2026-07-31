@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { validateEnvironment } from './environment';
+import { type Environment, validateEnvironment } from './environment';
+import { buildEnvironment } from './environment.builder';
+import { ENVIRONMENT } from './environment.token';
 
 @Module({
   imports: [
@@ -11,5 +13,14 @@ import { validateEnvironment } from './environment';
       validate: validateEnvironment,
     }),
   ],
+  providers: [
+    {
+      provide: ENVIRONMENT,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<Environment, true>) =>
+        buildEnvironment(configService),
+    },
+  ],
+  exports: [ENVIRONMENT],
 })
 export class EnvironmentModule {}
