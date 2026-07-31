@@ -12,30 +12,21 @@ export class MockSpainFuelPriceProvider implements CountryFuelPriceProvider {
   public getNearbyFuelPrices(
     request: NearbyFuelPricesRequest,
   ): Promise<NearbyFuelPricesResult> {
+    const now = new Date();
+
     if (request.coordinate.latitude > 43) {
-      return Promise.resolve(baseResult([]));
+      return Promise.resolve(baseResult(now, []));
     }
 
     return Promise.resolve(
-      baseResult([
-        station('mock-es-1', 41.387, 2.17, 1.609, 1.489),
-        station('mock-es-2', 41.389, 2.171, 1.629, 1.509),
-        station('mock-es-3', 41.394, 2.181, 1.579, 1.519),
-        station('mock-es-4', 41.411, 2.191, 1.699, 1.559),
-        station('mock-es-5', 41.43, 2.2, 1.549, 1.539),
-        station('mock-es-6', 41.5, 2.21, 1.719, 1.579),
-        {
-          id: 'mock-es-stale',
-          coordinate: { latitude: 41.388, longitude: 2.169 },
-          countryCode: 'ES',
-          prices: [
-            {
-              fuelProduct: 'petrol-95-e5',
-              pricePerLitre: { amount: 1.1, currency: 'EUR' },
-              updatedAt: '2026-07-24T08:00:00Z',
-            },
-          ],
-        },
+      baseResult(now, [
+        station(now, 'mock-es-1', 41.387, 2.17, 1.609, 1.489),
+        station(now, 'mock-es-2', 41.389, 2.171, 1.629, 1.509),
+        station(now, 'mock-es-3', 41.394, 2.181, 1.579, 1.519),
+        station(now, 'mock-es-4', 41.411, 2.191, 1.699, 1.559),
+        station(now, 'mock-es-5', 41.43, 2.2, 1.549, 1.539),
+        station(now, 'mock-es-6', 41.5, 2.21, 1.719, 1.579),
+        staleStation(now),
         {
           id: 'mock-es-missing',
           coordinate: { latitude: 41.389, longitude: 2.168 },
@@ -48,13 +39,14 @@ export class MockSpainFuelPriceProvider implements CountryFuelPriceProvider {
 }
 
 function baseResult(
+  now: Date,
   stations: NearbyFuelPricesResult['stations'],
 ): NearbyFuelPricesResult {
   return {
     countryCode: 'ES',
     currency: 'EUR',
-    sourceUpdatedAt: '2026-07-28T16:00:00Z',
-    retrievedAt: '2026-07-28T17:00:00Z',
+    sourceUpdatedAt: new Date(now.getTime() - 3_600_000).toISOString(),
+    retrievedAt: now.toISOString(),
     stations,
     attribution: {
       label: 'Official fuel-price data for Spain',
@@ -64,6 +56,7 @@ function baseResult(
 }
 
 function station(
+  now: Date,
   id: string,
   latitude: number,
   longitude: number,
@@ -81,12 +74,27 @@ function station(
       {
         fuelProduct: 'petrol-95-e5',
         pricePerLitre: { amount: petrol, currency: 'EUR' },
-        updatedAt: '2026-07-28T15:00:00Z',
+        updatedAt: new Date(now.getTime() - 60_000).toISOString(),
       },
       {
         fuelProduct: 'diesel-a',
         pricePerLitre: { amount: diesel, currency: 'EUR' },
-        updatedAt: '2026-07-28T15:30:00Z',
+        updatedAt: new Date(now.getTime() - 30_000).toISOString(),
+      },
+    ],
+  };
+}
+
+function staleStation(now: Date): NearbyFuelPricesResult['stations'][number] {
+  return {
+    id: 'mock-es-stale',
+    coordinate: { latitude: 41.388, longitude: 2.169 },
+    countryCode: 'ES',
+    prices: [
+      {
+        fuelProduct: 'petrol-95-e5',
+        pricePerLitre: { amount: 1.1, currency: 'EUR' },
+        updatedAt: new Date(now.getTime() - 4 * 24 * 3_600_000).toISOString(),
       },
     ],
   };

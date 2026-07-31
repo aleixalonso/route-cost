@@ -14,6 +14,10 @@ export default defineConfig({
         __dirname,
         '../../packages/domain/src/index.ts',
       ),
+      '@route-cost/fuel-prices': resolve(
+        __dirname,
+        '../../packages/fuel-prices/src/index.ts',
+      ),
       '@route-cost/geocoding': resolve(
         __dirname,
         '../../packages/geocoding/src/index.ts',

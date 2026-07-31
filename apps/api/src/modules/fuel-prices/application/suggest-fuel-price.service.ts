@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import type { FuelPriceSuggestionResponse } from '@route-cost/contracts';
 import type {
   CountryFuelPriceProviderRegistry,
   FuelPriceSearchConfig,
@@ -19,29 +20,6 @@ import { COUNTRY_RESOLVER } from '../tokens/country-resolver.token';
 import type { CountryResolver, ResolvedCountry } from './country-resolver';
 import { ResolveRequestedFuelProductService } from './resolve-requested-fuel-product.service';
 
-export type FuelPriceAvailability =
-  | {
-      readonly status: 'available';
-      readonly country: ResolvedCountry;
-      readonly fuelProduct: FuelProduct;
-      readonly suggestion: ReturnType<typeof calculateFuelPriceSuggestion>;
-    }
-  | {
-      readonly status: 'unsupported-country';
-      readonly country: ResolvedCountry;
-      readonly fuelProduct: FuelProduct;
-    }
-  | {
-      readonly status: 'country-undetermined';
-      readonly fuelProduct: FuelProduct;
-    }
-  | {
-      readonly status: 'no-nearby-prices';
-      readonly country: ResolvedCountry;
-      readonly fuelProduct: FuelProduct;
-      readonly maximumRadiusMetres: number;
-    };
-
 @Injectable()
 export class SuggestFuelPriceService {
   public constructor(
@@ -58,7 +36,7 @@ export class SuggestFuelPriceService {
     readonly coordinate: GeographicCoordinate;
     readonly vehicleId?: string;
     readonly fuelProduct?: FuelProduct;
-  }): Promise<FuelPriceAvailability> {
+  }): Promise<FuelPriceSuggestionResponse> {
     const fuelProduct = this.resolveRequestedFuelProduct.resolve(request);
     const country = await this.countryResolver.resolveCountry(
       request.coordinate,
@@ -71,7 +49,11 @@ export class SuggestFuelPriceService {
     const provider = this.providerRegistry.getProvider(country.countryCode);
 
     if (provider === undefined) {
-      return { status: 'unsupported-country', country, fuelProduct };
+      return {
+        status: 'unsupported-country',
+        country: toCountryResponse(country),
+        fuelProduct,
+      };
     }
 
     const result = await provider.getNearbyFuelPrices({
@@ -88,7 +70,7 @@ export class SuggestFuelPriceService {
     if (selected.stations.length === 0) {
       return {
         status: 'no-nearby-prices',
-        country,
+        country: toCountryResponse(country),
         fuelProduct,
         maximumRadiusMetres: this.searchConfig.radiusStepsMetres.at(
           -1,
@@ -98,15 +80,21 @@ export class SuggestFuelPriceService {
 
     return {
       status: 'available',
-      country,
+      country: toCountryResponse(country),
       fuelProduct,
-      suggestion: calculateFuelPriceSuggestion({
-        result,
-        fuelProduct,
-        selected,
-      }),
+      suggestion: calculateFuelPriceSuggestion({ result, selected }),
     };
   }
+}
+
+export function toCountryResponse(country: ResolvedCountry): {
+  readonly code: string;
+  readonly name?: string;
+} {
+  return {
+    code: country.countryCode,
+    ...(country.countryName === undefined ? {} : { name: country.countryName }),
+  };
 }
 
 export type FuelPriceSearchEnvironment = Pick<

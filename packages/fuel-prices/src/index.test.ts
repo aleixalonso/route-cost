@@ -105,7 +105,6 @@ describe('selectNearbyStations and suggestion', () => {
 
     const suggestion = calculateFuelPriceSuggestion({
       result,
-      fuelProduct: 'petrol-95-e5',
       selected,
     });
 
@@ -166,7 +165,6 @@ describe('selectNearbyStations and suggestion', () => {
           retrievedAt: '2026-07-28T17:00:00Z',
           stations: [],
         },
-        fuelProduct: 'petrol-95-e5',
         selected: { radiusMetres: 5_000, stations: [] },
       }),
     ).toThrow('without selected stations');

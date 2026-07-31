@@ -62,8 +62,6 @@ export interface CountryFuelPriceProviderRegistry {
 export type FuelPriceSuggestionMethod = 'nearby-median';
 
 export interface FuelPriceSuggestion {
-  readonly countryCode: string;
-  readonly fuelProduct: FuelProduct;
   readonly suggestedPricePerLitre: MoneyPerLitre;
   readonly method: FuelPriceSuggestionMethod;
   readonly stationCount: number;
@@ -259,7 +257,6 @@ export function selectNearbyStations(
 
 export function calculateFuelPriceSuggestion(input: {
   readonly result: NearbyFuelPricesResult;
-  readonly fuelProduct: FuelProduct;
   readonly selected: SelectedNearbyStations;
 }): FuelPriceSuggestion {
   if (input.selected.stations.length === 0) {
@@ -274,8 +271,6 @@ export function calculateFuelPriceSuggestion(input: {
     .filter((value): value is string => value !== undefined)
     .sort();
   const suggestion = {
-    countryCode: input.result.countryCode,
-    fuelProduct: input.fuelProduct,
     suggestedPricePerLitre: {
       amount: calculateMedian(amounts),
       currency: input.result.currency,
