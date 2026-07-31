@@ -21,6 +21,14 @@ import {
 import { buildRouteCostEstimateRequest } from '../../features/route-cost-form/lib/build-route-cost-estimate-request';
 import { suggestFuelPrice } from '../../features/route-cost-form/lib/fuel-price-suggestion-api';
 import { postRouteCostEstimate } from '../../features/route-cost-form/lib/route-cost-api';
+import {
+  getFirstInvalidRegisteredField,
+  getVehicleMode,
+  routeEstimatorDefaultValues,
+  type RouteEstimatorFieldErrors,
+  type RouteEstimatorUiFormValues,
+  validateRouteEstimatorForm,
+} from '../../features/route-cost-form/model/route-estimator-ui-form';
 import { RouteCostResults } from '../../features/route-cost-results';
 import {
   vehicleCategoryLabels,
@@ -37,14 +45,6 @@ import {
   Select,
   Surface,
 } from '../../shared/components';
-import {
-  getFirstInvalidRegisteredField,
-  getVehicleMode,
-  routeEstimatorDefaultValues,
-  type RouteEstimatorFieldErrors,
-  type RouteEstimatorUiFormValues,
-  validateRouteEstimatorForm,
-} from './route-estimator-flow';
 
 export function RouteEstimatorPage() {
   const { control, register, handleSubmit, setValue, setFocus, getValues } =

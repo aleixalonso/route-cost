@@ -6,7 +6,7 @@ import {
   routeEstimatorDefaultValues,
   type RouteEstimatorUiFormValues,
   validateRouteEstimatorForm,
-} from './route-estimator-flow';
+} from './route-estimator-ui-form';
 
 const origin = {
   id: 'origin',
@@ -33,7 +33,7 @@ function createValues(
   };
 }
 
-describe('route estimator flow', () => {
+describe('route estimator ui form', () => {
   it('uses catalog mode unless custom is selected', () => {
     expect(getVehicleMode('honda-forza-350-2025')).toBe('catalog');
     expect(getVehicleMode('')).toBe('catalog');

@@ -3,8 +3,8 @@ import type {
   FuelProduct,
 } from '@route-cost/contracts';
 
-import type { RouteEstimatorUiFormValues } from '../../../pages/route-estimator/route-estimator-flow';
-import { getVehicleMode } from '../../../pages/route-estimator/route-estimator-flow';
+import type { RouteEstimatorUiFormValues } from '../model/route-estimator-ui-form';
+import { getVehicleMode } from '../model/route-estimator-ui-form';
 
 export function buildFuelPriceSuggestionRequest(
   values: RouteEstimatorUiFormValues,

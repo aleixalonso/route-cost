@@ -5,8 +5,8 @@ import type {
 import { consumptionProfileSchema } from '@route-cost/contracts';
 import type { z } from 'zod';
 
-import type { SelectedLocation } from '../../features/location-search';
-import type { RouteEstimatorFormValues } from '../../features/route-cost-form/model/route-estimator-form';
+import type { SelectedLocation } from '../../location-search';
+import type { RouteEstimatorFormValues } from './route-estimator-form';
 
 type ConsumptionProfile = z.infer<typeof consumptionProfileSchema>;
 
