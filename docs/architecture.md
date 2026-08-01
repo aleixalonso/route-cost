@@ -115,7 +115,38 @@ MapLibre is initialized lazily after a successful route result exists. The front
 
 ## Routing
 
-`@route-cost/routing` owns provider-neutral routing models, the `RoutingProvider` port, vehicle-category profile resolution, segment classification, and route distance summaries.
+`@route-cost/routing` owns provider-neutral routing models, the `RoutingProvider` port, vehicle-category profile resolution, segment classification, route distance summaries, route preferences (with centralized defaults), observed route characteristics aggregation, and preference compliance.
+
+Route preferences flow through the stack without leaking provider terms:
+
+```text
+User preferences
+   │
+   ▼
+Provider-neutral RoutePreferences
+   │
+   ▼
+Valhalla costing-options mapper
+   │
+   ▼
+Route alternatives
+   │
+   ▼
+Trace attributes
+   │
+   ▼
+Observed characteristics
+   │
+   ▼
+Preference compliance
+   │
+   ▼
+Frontend comparison
+```
+
+`POST /api/v1/route-cost-estimates` accepts an optional provider-neutral `routePreferences` object (`avoidTolls`, `avoidMotorways`, `avoidFerries`, `priority`). Omitted or partial objects resolve to the centralized defaults in `@route-cost/routing`. The Valhalla adapter maps compatible preferences to costing options (`use_tolls`, `use_highways`, `use_ferry`, `use_rail_ferry`, and `use_distance` for auto or `shortest` for motorcycle/motor_scooter) and applies the same options to route and `trace_attributes` requests. Unsupported Valhalla options for `motor_scooter` are omitted. The application service then computes per-alternative observed characteristics and preference compliance from the traced segments and returns them together with the normalized applied preferences.
+
+See [docs/decisions/0011-route-preferences-and-characteristics.md](decisions/0011-route-preferences-and-characteristics.md) for the exact mapping, provider verification, and detection policies.
 
 The API registers the provider behind the `ROUTING_PROVIDER` injection token:
 
@@ -148,7 +179,7 @@ selects `ValhallaRoutingProvider`, which calls the Stadia Maps EU Valhalla API f
 
 `POST /api/v1/routes` accepts provider-neutral coordinates, vehicle category, and alternatives. It returns normalized alternatives, encoded polylines, classified segments, and route distance summaries.
 
-`POST /api/v1/route-cost-estimates` uses the same `RoutingProvider` and route summaries, then calls pure domain functions to estimate fuel consumption and fuel cost for each route alternative. The request can select a catalog vehicle by `vehicleId` or supply a custom category consumption profile in litres per 100 kilometres plus fuel price in currency units per litre. Consumption values in examples and catalog category profiles may be estimated.
+`POST /api/v1/route-cost-estimates` uses the same `RoutingProvider` and route summaries, then calls pure domain functions to estimate fuel consumption and fuel cost for each route alternative. The request can select a catalog vehicle by `vehicleId` or supply a custom category consumption profile in litres per 100 kilometres plus fuel price in currency units per litre, and can supply optional route preferences. Consumption values in examples and catalog category profiles may be estimated. Each alternative includes its observed route characteristics and preference compliance.
 
 ```bash
 curl \
@@ -174,6 +205,12 @@ curl \
       "amountPerLitre": 1.6,
       "currency": "EUR"
     },
+    "routePreferences": {
+      "avoidTolls": false,
+      "avoidMotorways": false,
+      "avoidFerries": false,
+      "priority": "fastest"
+    },
     "alternatives": 1
   }' \
   http://localhost:3001/api/v1/route-cost-estimates
@@ -198,6 +235,12 @@ curl \
     "fuelPrice": {
       "amountPerLitre": 1.6,
       "currency": "EUR"
+    },
+    "routePreferences": {
+      "avoidTolls": false,
+      "avoidMotorways": false,
+      "avoidFerries": false,
+      "priority": "fastest"
     },
     "alternatives": 1
   }' \

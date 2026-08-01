@@ -15,6 +15,7 @@ export function buildRouteCostEstimateRequest(
       amountPerLitre: formValues.fuelPrice,
       currency: 'EUR',
     },
+    routePreferences: formValues.routePreferences,
     alternatives: 1,
   } as const;
 

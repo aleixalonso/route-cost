@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import routeAlternativesFixture from '../../../../../test/fixtures/valhalla/route-alternatives.json';
 import routeNoShapeFixture from '../../../../../test/fixtures/valhalla/route-no-shape.json';
 import routePrimaryFixture from '../../../../../test/fixtures/valhalla/route-primary.json';
+import traceFerryFixture from '../../../../../test/fixtures/valhalla/trace-ferry.json';
 import traceHighDensityMotorwayFixture from '../../../../../test/fixtures/valhalla/trace-high-density-motorway.json';
 import traceMissingOptionalFieldsFixture from '../../../../../test/fixtures/valhalla/trace-missing-optional-fields.json';
 import traceMixedRouteFixture from '../../../../../test/fixtures/valhalla/trace-mixed-route.json';
 import traceMotorwayFixture from '../../../../../test/fixtures/valhalla/trace-motorway.json';
+import traceRailFerryFixture from '../../../../../test/fixtures/valhalla/trace-rail-ferry.json';
 import { ValhallaInvalidResponseError } from './valhalla.errors';
 import type {
   ValhallaRouteResponse,
@@ -92,6 +94,54 @@ describe('valhalla normalizer', () => {
     expect(segment).not.toHaveProperty('speedLimitKmh');
     expect(segment).not.toHaveProperty('roadClass');
     expect(segment).not.toHaveProperty('density');
+  });
+
+  it('normalizes toll state from the toll attribute', () => {
+    expect(
+      normalizeValhallaRoutes(routePrimary(), [traceMixedRoute()])
+        .alternatives[0]?.segments,
+    ).toMatchObject([{ isToll: false }, { isToll: false }, { isToll: true }]);
+  });
+
+  it('keeps toll state unknown when the toll attribute is missing', () => {
+    expect(
+      normalizeValhallaRoutes(routePrimary(), [traceMissingOptionalFields()])
+        .alternatives[0]?.segments[0],
+    ).toMatchObject({
+      isToll: null,
+      isFerry: null,
+    });
+  });
+
+  it('marks ferry use as a ferry segment', () => {
+    expect(
+      normalizeValhallaRoutes(routePrimary(), [traceFerry()]).alternatives[0]
+        ?.segments[0],
+    ).toMatchObject({
+      isFerry: true,
+      isToll: false,
+      roadUse: 'ferry',
+    });
+  });
+
+  it('marks rail-ferry use as a ferry segment', () => {
+    expect(
+      normalizeValhallaRoutes(routePrimary(), [traceRailFerry()])
+        .alternatives[0]?.segments[0],
+    ).toMatchObject({
+      isFerry: true,
+      roadUse: 'rail-ferry',
+    });
+  });
+
+  it('marks regular road use as not a ferry', () => {
+    expect(
+      normalizeValhallaRoutes(routePrimary(), [traceMotorway()]).alternatives[0]
+        ?.segments[0],
+    ).toMatchObject({
+      isFerry: false,
+      roadUse: 'road',
+    });
   });
 
   it('keeps a high-density motorway classified as motorway', () => {
@@ -189,6 +239,14 @@ function traceMissingOptionalFields(): ValhallaTraceAttributesResponse {
   return valhallaTraceAttributesResponseSchema.parse(
     traceMissingOptionalFieldsFixture,
   );
+}
+
+function traceFerry(): ValhallaTraceAttributesResponse {
+  return valhallaTraceAttributesResponseSchema.parse(traceFerryFixture);
+}
+
+function traceRailFerry(): ValhallaTraceAttributesResponse {
+  return valhallaTraceAttributesResponseSchema.parse(traceRailFerryFixture);
 }
 
 function traceHighDensityMotorway(): ValhallaTraceAttributesResponse {

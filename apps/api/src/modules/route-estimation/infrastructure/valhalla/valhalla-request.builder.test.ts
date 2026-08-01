@@ -1,5 +1,7 @@
+import type { RoutePreferences } from '@route-cost/routing';
 import { describe, expect, it } from 'vitest';
 
+import type { ValhallaCostingOptions } from './valhalla.types';
 import {
   buildValhallaRouteRequest,
   buildValhallaTraceAttributesRequest,
@@ -12,9 +14,23 @@ const baseRequest = {
   vehicleCategory: 'car',
 } as const;
 
+const defaultPreferences: RoutePreferences = {
+  avoidTolls: false,
+  avoidMotorways: false,
+  avoidFerries: false,
+  priority: 'fastest',
+};
+
 describe('valhalla request builder', () => {
-  it('builds a car route request', () => {
-    expect(buildValhallaRouteRequest(baseRequest, 'auto', config())).toEqual({
+  it('builds a car route request with explicit auto costing options', () => {
+    expect(
+      buildValhallaRouteRequest(
+        baseRequest,
+        'auto',
+        config(),
+        autoCosting(defaultPreferences),
+      ),
+    ).toEqual({
       locations: [
         { lat: 41.3902, lon: 2.154 },
         { lat: 41.5912, lon: 1.5209 },
@@ -22,6 +38,7 @@ describe('valhalla request builder', () => {
       costing: 'auto',
       units: 'kilometers',
       directions_type: 'none',
+      costing_options: autoCosting(defaultPreferences),
     });
   });
 
@@ -31,10 +48,11 @@ describe('valhalla request builder', () => {
         { ...baseRequest, vehicleCategory: 'motorcycle' },
         'motorcycle',
         config(),
+        motorcycleCosting(defaultPreferences),
       ),
     ).toMatchObject({
       costing: 'motorcycle',
-      costing_options: { motorcycle: { use_unpaved: 0 } },
+      costing_options: motorcycleCosting(defaultPreferences),
     });
   });
 
@@ -44,6 +62,7 @@ describe('valhalla request builder', () => {
         { ...baseRequest, vehicleCategory: 'maxi-scooter' },
         'motorcycle',
         config(),
+        motorcycleCosting(defaultPreferences),
       ).costing,
     ).toBe('motorcycle');
   });
@@ -54,15 +73,11 @@ describe('valhalla request builder', () => {
         { ...baseRequest, vehicleCategory: 'low-speed-scooter' },
         'motor_scooter',
         config(),
+        motorScooterCosting(defaultPreferences),
       ),
     ).toMatchObject({
       costing: 'motor_scooter',
-      costing_options: {
-        motor_scooter: {
-          top_speed: 45,
-          use_highways: 0,
-        },
-      },
+      costing_options: motorScooterCosting(defaultPreferences),
     });
   });
 
@@ -72,6 +87,7 @@ describe('valhalla request builder', () => {
         { ...baseRequest, alternatives: 0 },
         'auto',
         config(),
+        autoCosting(defaultPreferences),
       ),
     ).not.toHaveProperty('alternates');
   });
@@ -82,6 +98,7 @@ describe('valhalla request builder', () => {
         { ...baseRequest, alternatives: 2 },
         'auto',
         config(),
+        autoCosting(defaultPreferences),
       ),
     ).toMatchObject({ alternates: 2 });
   });
@@ -92,13 +109,20 @@ describe('valhalla request builder', () => {
         { ...baseRequest, alternatives: 3 },
         'auto',
         config(),
+        autoCosting(defaultPreferences),
       ),
     ).toMatchObject({ alternates: 2 });
   });
 
-  it('builds a trace attributes request', () => {
+  it('builds a trace attributes request with the same costing options', () => {
+    const costingOptions = motorcycleCosting(defaultPreferences);
+
     expect(
-      buildValhallaTraceAttributesRequest('encoded', 'motorcycle'),
+      buildValhallaTraceAttributesRequest(
+        'encoded',
+        'motorcycle',
+        costingOptions,
+      ),
     ).toEqual({
       encoded_polyline: 'encoded',
       costing: 'motorcycle',
@@ -107,7 +131,7 @@ describe('valhalla request builder', () => {
         action: 'include',
         attributes: traceAttributeFilter,
       },
-      costing_options: { motorcycle: { use_unpaved: 0 } },
+      costing_options: costingOptions,
     });
   });
 
@@ -134,4 +158,44 @@ describe('valhalla request builder', () => {
 
 function config() {
   return { maxAlternatives: 2 };
+}
+
+function autoCosting(preferences: RoutePreferences): ValhallaCostingOptions {
+  return {
+    auto: {
+      use_tolls: preferences.avoidTolls ? 0 : 1,
+      use_highways: preferences.avoidMotorways ? 0 : 1,
+      use_ferry: preferences.avoidFerries ? 0 : 1,
+      use_rail_ferry: preferences.avoidFerries ? 0 : 1,
+      use_distance: preferences.priority === 'fastest' ? 0 : 1,
+    },
+  };
+}
+
+function motorcycleCosting(
+  preferences: RoutePreferences,
+): ValhallaCostingOptions {
+  return {
+    motorcycle: {
+      use_tolls: preferences.avoidTolls ? 0 : 1,
+      use_highways: preferences.avoidMotorways ? 0 : 1,
+      use_ferry: preferences.avoidFerries ? 0 : 1,
+      use_rail_ferry: preferences.avoidFerries ? 0 : 1,
+      use_unpaved: 0,
+      shortest: preferences.priority === 'shortest',
+    },
+  };
+}
+
+function motorScooterCosting(
+  preferences: RoutePreferences,
+): ValhallaCostingOptions {
+  return {
+    motor_scooter: {
+      use_ferry: preferences.avoidFerries ? 0 : 1,
+      use_rail_ferry: preferences.avoidFerries ? 0 : 1,
+      top_speed: 45,
+      shortest: preferences.priority === 'shortest',
+    },
+  };
 }

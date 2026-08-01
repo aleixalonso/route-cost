@@ -1,5 +1,6 @@
 import type {
   FuelProduct,
+  RoutePreferences,
   VehicleRoutingCategory,
 } from '@route-cost/contracts';
 import { consumptionProfileSchema } from '@route-cost/contracts';
@@ -25,4 +26,5 @@ export type RouteEstimatorFormValues = {
   readonly origin: SelectedLocation;
   readonly destination: SelectedLocation;
   readonly fuelPrice: number;
+  readonly routePreferences: RoutePreferences;
 } & VehicleSelection;

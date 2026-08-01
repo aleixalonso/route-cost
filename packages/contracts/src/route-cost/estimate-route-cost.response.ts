@@ -9,6 +9,11 @@ import {
   vehiclePowertrainTypeSchema,
 } from '../vehicles/vehicle.schema.js';
 import { consumptionProfileSchema } from './estimate-route-cost.request.js';
+import {
+  routeCharacteristicsSchema,
+  routePreferenceComplianceSchema,
+} from './route-characteristics.contract.js';
+import { routePreferencesSchema } from './route-preferences.contract.js';
 
 const categoryFuelEstimateSchema = z.object({
   distanceMetres: z.number().finite().nonnegative(),
@@ -37,6 +42,8 @@ export const fuelCostEstimateSchema = z.object({
 export const routeCostAlternativeSchema = routeAlternativeSchema.extend({
   fuelEstimate: fuelConsumptionEstimateSchema,
   costEstimate: fuelCostEstimateSchema,
+  routeCharacteristics: routeCharacteristicsSchema,
+  preferenceCompliance: routePreferenceComplianceSchema,
 });
 
 export const routeCostVehicleSelectionSchema = z.object({
@@ -57,6 +64,7 @@ export const routeCostVehicleSelectionSchema = z.object({
 
 export const estimateRouteCostResponseSchema = z.object({
   vehicle: routeCostVehicleSelectionSchema,
+  routePreferences: routePreferencesSchema,
   alternatives: z.array(routeCostAlternativeSchema),
 });
 

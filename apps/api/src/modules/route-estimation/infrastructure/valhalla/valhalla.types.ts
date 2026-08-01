@@ -40,14 +40,34 @@ export type ValhallaTraceAttribute =
   | 'edge.begin_shape_index'
   | 'edge.end_shape_index';
 
+export interface ValhallaAutoCostingOptions {
+  use_tolls: number;
+  use_highways: number;
+  use_ferry: number;
+  use_rail_ferry: number;
+  use_distance: number;
+}
+
+export interface ValhallaMotorcycleCostingOptions {
+  use_tolls: number;
+  use_highways: number;
+  use_ferry: number;
+  use_rail_ferry: number;
+  use_unpaved: number;
+  shortest: boolean;
+}
+
+export interface ValhallaMotorScooterCostingOptions {
+  use_ferry: number;
+  use_rail_ferry: number;
+  top_speed: number;
+  shortest: boolean;
+}
+
 export interface ValhallaCostingOptions {
-  motorcycle?: {
-    use_unpaved: number;
-  };
-  motor_scooter?: {
-    top_speed: number;
-    use_highways: number;
-  };
+  auto?: ValhallaAutoCostingOptions;
+  motorcycle?: ValhallaMotorcycleCostingOptions;
+  motor_scooter?: ValhallaMotorScooterCostingOptions;
 }
 
 export interface ValhallaRouteRequest {

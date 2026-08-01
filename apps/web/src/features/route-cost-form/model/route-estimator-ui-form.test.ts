@@ -76,6 +76,7 @@ describe('route estimator ui form', () => {
       destination,
       vehicleId: 'honda-forza-350-2025',
       fuelPrice: 1.6,
+      routePreferences: defaultRoutePreferences(),
     });
   });
 
@@ -104,6 +105,7 @@ describe('route estimator ui form', () => {
         unknownLitresPer100Km: 4.2,
       },
       fuelPrice: 1.6,
+      routePreferences: defaultRoutePreferences(),
     });
   });
 
@@ -124,4 +126,40 @@ describe('route estimator ui form', () => {
       'Enter a consumption value between 0 and 100.',
     );
   });
+
+  it('maps every route preference into submission values', () => {
+    const validation = validateRouteEstimatorForm(
+      createValues({
+        avoidTolls: true,
+        avoidMotorways: true,
+        avoidFerries: true,
+        priority: 'shortest',
+      }),
+    );
+
+    expect(validation.values?.routePreferences).toEqual({
+      avoidTolls: true,
+      avoidMotorways: true,
+      avoidFerries: true,
+      priority: 'shortest',
+    });
+  });
+
+  it('keeps preference defaults aligned with the backend defaults', () => {
+    expect(routeEstimatorDefaultValues).toMatchObject({
+      avoidTolls: false,
+      avoidMotorways: false,
+      avoidFerries: false,
+      priority: 'fastest',
+    });
+  });
 });
+
+function defaultRoutePreferences() {
+  return {
+    avoidTolls: false,
+    avoidMotorways: false,
+    avoidFerries: false,
+    priority: 'fastest',
+  } as const;
+}

@@ -1,5 +1,6 @@
 import type {
   EstimateRouteCostResponse,
+  RoutePreferences,
   VehicleSummary,
 } from '@route-cost/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -17,6 +18,7 @@ import {
   type FuelPriceInputState,
   FuelPriceSuggestionStatus,
 } from '../../features/route-cost-form/components/fuel-price-suggestion-status';
+import { RoutePreferencesFieldset } from '../../features/route-cost-form/components/route-preferences-fieldset';
 import {
   buildFuelPriceSuggestionRequest,
   fuelPriceSuggestionQueryKey,
@@ -33,6 +35,7 @@ import {
   validateRouteEstimatorForm,
 } from '../../features/route-cost-form/model/route-estimator-ui-form';
 import { RouteCostResults } from '../../features/route-cost-results';
+import { routePreferencesEqual } from '../../features/route-cost-results/lib/route-characteristics';
 import {
   vehicleCategoryLabels,
   VehicleSelector,
@@ -69,6 +72,10 @@ export function RouteEstimatorPage() {
   const vehicleSelect = useWatch({ control, name: 'vehicleSelect' });
   const origin = useWatch({ control, name: 'origin' });
   const fuelProduct = useWatch({ control, name: 'fuelProduct' });
+  const avoidTolls = useWatch({ control, name: 'avoidTolls' });
+  const avoidMotorways = useWatch({ control, name: 'avoidMotorways' });
+  const avoidFerries = useWatch({ control, name: 'avoidFerries' });
+  const priority = useWatch({ control, name: 'priority' });
   const vehicleMode = getVehicleMode(vehicleSelect);
   const selectedVehicle = useMemo(
     () => vehicles.find((vehicle) => vehicle.id === vehicleSelect) ?? null,
@@ -76,6 +83,15 @@ export function RouteEstimatorPage() {
   );
 
   const routeCostMutation = useMutation({ mutationFn: postRouteCostEstimate });
+  const currentPreferences: RoutePreferences = {
+    avoidTolls,
+    avoidMotorways,
+    avoidFerries,
+    priority,
+  };
+  const preferencesStale =
+    lastResult !== null &&
+    !routePreferencesEqual(currentPreferences, lastResult.routePreferences);
   const [fuelPriceState, setFuelPriceState] = useState<FuelPriceInputState>({
     source: 'empty',
     amountText: '',
@@ -279,6 +295,15 @@ export function RouteEstimatorPage() {
               )}
             />
 
+            <RoutePreferencesFieldset
+              priorityRegistration={register('priority')}
+              avoidanceRegistrations={{
+                avoidTolls: register('avoidTolls'),
+                avoidMotorways: register('avoidMotorways'),
+                avoidFerries: register('avoidFerries'),
+              }}
+            />
+
             {vehicleMode === 'custom' ? (
               <fieldset className="grid gap-3 rounded-md border border-slate-200 p-3">
                 <legend className="px-1 text-sm font-semibold text-slate-900">
@@ -431,6 +456,7 @@ export function RouteEstimatorPage() {
           result={lastResult}
           routeLocations={lastRouteLocations}
           isRecalculating={routeCostMutation.isPending && lastResult !== null}
+          isPreferencesStale={preferencesStale}
         />
         {lastResult === null ? (
           <section

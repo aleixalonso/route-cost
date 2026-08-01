@@ -27,11 +27,15 @@ Frontend flow:
 1. Select origin.
 2. Select destination.
 3. Select a catalog or custom vehicle.
-4. Review the suggested nearby fuel price when available, or enter fuel price manually.
-5. Calculate.
-6. View summary.
-7. View route map.
-8. Switch alternatives when available.
+4. Choose fastest or shortest.
+5. Optionally avoid toll roads, motorways, or ferries.
+6. Review the suggested nearby fuel price when available, or enter fuel price manually.
+7. Calculate.
+8. Review the actual characteristics of every alternative (tolls, motorways, ferries).
+9. Check warnings when a preference could not be satisfied.
+10. View route map and switch alternatives when available.
+
+"Avoid" influences routing but is not an absolute guarantee: a returned route may still include an avoided feature when no reasonable alternative is available, and RouteCost reports the route that was actually returned. RouteCost detects toll-road usage but does not calculate toll fees.
 
 The frontend flow is optimized mobile-first. Mock API providers are the default, so local development works without live routing or geocoding credentials.
 
@@ -78,6 +82,23 @@ Unknown
 ## Route Cost Estimates
 
 `POST /api/v1/route-cost-estimates` calculates route alternatives through the configured routing provider, estimates litres by road category, and estimates fuel cost. It supports catalog mode with `vehicleId` and custom mode with `vehicleCategory` plus `consumptionProfile`. Consumption figures are example or catalog-estimated values unless their metadata says otherwise.
+
+Requests may include provider-neutral route preferences:
+
+```json
+{
+  "routePreferences": {
+    "avoidTolls": true,
+    "avoidMotorways": false,
+    "avoidFerries": false,
+    "priority": "fastest"
+  }
+}
+```
+
+`routePreferences` is optional and may be partially supplied; omitted fields resolve to `avoidTolls: false`, `avoidMotorways: false`, `avoidFerries: false`, `priority: "fastest"`. Requests without preferences keep the previous behavior. Avoidance is a routing preference, not an absolute guarantee.
+
+Every response alternative includes the observed characteristics of the actual returned route (`tolls`, `motorways`, `ferries` with presence, distance, and segment count) and a `preferenceCompliance.conflicts` list such as `tolls-present` when an avoided feature is still present. The response also echoes the normalized applied `routePreferences`. Toll presence describes distance, never toll price.
 
 Catalog mode:
 
@@ -319,4 +340,4 @@ pnpm geocoding:verify search \
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md). Turborepo remote cache can be added later with `TURBO_TOKEN` and `TURBO_TEAM`; CI does not require either variable.
+See [docs/architecture.md](docs/architecture.md) and [docs/decisions/0011-route-preferences-and-characteristics.md](docs/decisions/0011-route-preferences-and-characteristics.md). Turborepo remote cache can be added later with `TURBO_TOKEN` and `TURBO_TEAM`; CI does not require either variable.

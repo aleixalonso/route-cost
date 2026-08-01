@@ -1,5 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
+  calculateRouteCharacteristics,
+  calculateRoutePreferenceCompliance,
+  normalizeRoutePreferences,
+  type RouteAlternative,
   type RoutingProvider,
   type RoutingRequest,
   type RoutingResult,
@@ -23,11 +27,16 @@ export class ValhallaRoutingProvider implements RoutingProvider {
     request: RoutingRequest,
   ): Promise<RoutingResult> {
     const startedAt = Date.now();
+    const preferences = normalizeRoutePreferences(request.preferences);
 
     this.logger.log({
       event: 'routing_request_started',
       provider: 'valhalla',
       vehicleCategory: request.vehicleCategory,
+      avoidTolls: preferences?.avoidTolls ?? false,
+      avoidMotorways: preferences?.avoidMotorways ?? false,
+      avoidFerries: preferences?.avoidFerries ?? false,
+      priority: preferences?.priority ?? 'fastest',
       alternativesRequested: request.alternatives ?? 0,
     });
 
@@ -43,6 +52,18 @@ export class ValhallaRoutingProvider implements RoutingProvider {
         provider: 'valhalla',
         alternativesReturned: result.alternatives.length,
         durationMs: Date.now() - startedAt,
+        alternatives: result.alternatives.map((alternative) =>
+          summarizeAlternativeLogging(alternative),
+        ),
+        conflictCount: result.alternatives.reduce(
+          (total, alternative) =>
+            total +
+            calculateRoutePreferenceCompliance(
+              preferences,
+              calculateRouteCharacteristics(alternative.segments),
+            ).conflicts.length,
+          0,
+        ),
       });
 
       return result;
@@ -61,4 +82,36 @@ export class ValhallaRoutingProvider implements RoutingProvider {
       throw error;
     }
   }
+}
+
+function summarizeAlternativeLogging(
+  alternative: RouteAlternative,
+): Record<string, unknown> {
+  return {
+    id: alternative.id,
+    containsTolls: alternative.segments.some(
+      (segment) => segment.isToll === true,
+    ),
+    tollUnknown: alternative.segments.some(
+      (segment) => segment.isToll === null,
+    ),
+    containsMotorways: alternative.segments.some(
+      (segment) => segment.roadCategory === 'motorway',
+    ),
+    containsFerries: alternative.segments.some(
+      (segment) => segment.isFerry === true,
+    ),
+    ferryUnknown: alternative.segments.some(
+      (segment) => segment.isFerry === null,
+    ),
+    traceAttributeCompleteness: {
+      segments: alternative.segments.length,
+      missingTollAttributes: alternative.segments.filter(
+        (segment) => segment.isToll === null,
+      ).length,
+      missingFerryAttributes: alternative.segments.filter(
+        (segment) => segment.isFerry === null,
+      ).length,
+    },
+  };
 }

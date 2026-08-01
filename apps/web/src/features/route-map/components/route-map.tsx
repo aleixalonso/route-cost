@@ -4,6 +4,7 @@ import { clientEnvironment } from '../../../lib/env';
 import { formatDistanceMetres } from '../../../shared/lib/format-distance';
 import { formatDurationSeconds } from '../../../shared/lib/format-duration';
 import type { SelectedLocation } from '../../location-search';
+import { buildAlternativeFeatureSummary } from '../../route-cost-results/lib/route-characteristics';
 import { buildRouteMapModel } from '../lib/build-route-map-model';
 import { ROAD_CATEGORY_STYLE } from '../model/route-map.constants';
 import type {
@@ -53,7 +54,9 @@ export function RouteMap({
     alternative.distanceMetres,
   )}, ${formatDurationSeconds(alternative.durationSeconds)}. Road categories represented: ${
     representedLabels.length > 0 ? representedLabels.join(', ') : 'none'
-  }.`;
+  }. Observed characteristics: ${buildAlternativeFeatureSummary(
+    alternative.routeCharacteristics,
+  )}.`;
 
   return (
     <section

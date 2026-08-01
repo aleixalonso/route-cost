@@ -35,6 +35,8 @@ describe('RoutingProvider', () => {
                   endShapeIndex: 1,
                   roadCategory: 'unknown',
                   classificationReason: 'insufficient-data',
+                  isToll: false,
+                  isFerry: false,
                 },
               ],
             },
@@ -270,5 +272,7 @@ function segment(
       roadCategory === 'unknown'
         ? 'insufficient-data'
         : 'interurban-road-class',
+    isToll: false,
+    isFerry: false,
   };
 }

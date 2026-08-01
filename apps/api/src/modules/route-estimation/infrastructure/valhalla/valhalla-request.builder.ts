@@ -3,6 +3,7 @@ import type { RoutingProfile, RoutingRequest } from '@route-cost/routing';
 import { ValhallaInvalidResponseError } from './valhalla.errors';
 import type {
   ValhallaConfig,
+  ValhallaCostingOptions,
   ValhallaRouteRequest,
   ValhallaTraceAttribute,
   ValhallaTraceAttributesRequest,
@@ -30,6 +31,7 @@ export function buildValhallaRouteRequest(
   request: RoutingRequest,
   profile: RoutingProfile,
   config: Pick<ValhallaConfig, 'maxAlternatives'>,
+  costingOptions: ValhallaCostingOptions,
 ): ValhallaRouteRequest {
   assertValidCoordinates(request);
   const alternatives = Math.min(
@@ -46,13 +48,14 @@ export function buildValhallaRouteRequest(
     units: 'kilometers',
     directions_type: 'none',
     ...(alternatives > 0 ? { alternates: alternatives } : {}),
-    ...withCostingOptions(profile),
+    costing_options: costingOptions,
   };
 }
 
 export function buildValhallaTraceAttributesRequest(
   encodedPolyline: string,
   profile: RoutingProfile,
+  costingOptions: ValhallaCostingOptions,
 ): ValhallaTraceAttributesRequest {
   if (encodedPolyline.trim().length === 0) {
     throw new ValhallaInvalidResponseError({
@@ -68,34 +71,8 @@ export function buildValhallaTraceAttributesRequest(
       action: 'include',
       attributes: traceAttributeFilter,
     },
-    ...withCostingOptions(profile),
+    costing_options: costingOptions,
   };
-}
-
-function buildCostingOptions(
-  profile: RoutingProfile,
-): ValhallaRouteRequest['costing_options'] {
-  switch (profile) {
-    case 'auto':
-      return undefined;
-    case 'motorcycle':
-      return {
-        motorcycle: {
-          use_unpaved: 0,
-        },
-      };
-    case 'motor_scooter':
-      return {
-        motor_scooter: {
-          top_speed: 45,
-          use_highways: 0,
-        },
-      };
-    default: {
-      const exhaustive: never = profile;
-      return exhaustive;
-    }
-  }
 }
 
 function assertValidCoordinates(request: RoutingRequest): void {
@@ -113,13 +90,4 @@ function assertValidCoordinates(request: RoutingRequest): void {
       });
     }
   }
-}
-
-function withCostingOptions(
-  profile: RoutingProfile,
-): Pick<ValhallaRouteRequest, 'costing_options'> | Record<string, never> {
-  const costingOptions = buildCostingOptions(profile);
-  return costingOptions === undefined
-    ? {}
-    : { costing_options: costingOptions };
 }

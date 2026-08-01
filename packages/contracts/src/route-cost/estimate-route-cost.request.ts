@@ -5,6 +5,7 @@ import {
   maxRouteAlternatives,
   vehicleRoutingCategorySchema,
 } from '../route/estimate-route.request.js';
+import { routePreferencesInputSchema } from './route-preferences.contract.js';
 
 const consumptionRateSchema = z.number().finite().positive().max(100);
 
@@ -31,6 +32,7 @@ export const estimateRouteCostRequestSchema = z
     vehicleCategory: vehicleRoutingCategorySchema.optional(),
     consumptionProfile: consumptionProfileSchema.optional(),
     fuelPrice: fuelPriceSchema,
+    routePreferences: routePreferencesInputSchema.optional(),
     alternatives: z
       .number()
       .int()

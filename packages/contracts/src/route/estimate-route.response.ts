@@ -28,6 +28,8 @@ export const routeSegmentSchema = z.object({
   endShapeIndex: z.number().int().nonnegative(),
   roadCategory: roadCategorySchema,
   classificationReason: segmentClassificationReasonSchema,
+  isToll: z.boolean().nullable(),
+  isFerry: z.boolean().nullable(),
   expectedSpeedKmh: z.number().nonnegative().optional(),
   speedLimitKmh: z.number().nonnegative().optional(),
   roadClass: z.string().optional(),

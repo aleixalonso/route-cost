@@ -1,5 +1,42 @@
 import { expect, type Page, test } from '@playwright/test';
 
+const locationAttribution = { url: 'https://stadiamaps.com/attribution/' };
+
+const e2eLocations = [
+  {
+    id: 'mock:placa-catalunya',
+    name: 'Plaça de Catalunya',
+    label: 'Plaça de Catalunya, Barcelona, Catalunya, España',
+    formattedAddress: 'Plaça de Catalunya, Barcelona, Catalunya, España',
+    coordinate: { latitude: 41.387, longitude: 2.17 },
+    type: 'point-of-interest',
+    precision: 'point',
+    countryCode: 'ES',
+    country: 'España',
+    region: 'Catalunya',
+    locality: 'Barcelona',
+    postalCode: '08002',
+  },
+  {
+    id: 'mock:sagrada-familia',
+    name: 'Sagrada Família',
+    label: 'Sagrada Família, Barcelona, Catalunya, España',
+    formattedAddress: 'Carrer de Mallorca, 401, Barcelona, Catalunya, España',
+    coordinate: { latitude: 41.4036, longitude: 2.1744 },
+    type: 'point-of-interest',
+    precision: 'point',
+    countryCode: 'ES',
+    country: 'España',
+    region: 'Catalunya',
+    locality: 'Barcelona',
+    postalCode: '08013',
+  },
+] as const;
+
+test.beforeEach(async ({ page }) => {
+  await mockLocationSearch(page);
+});
+
 test('catalog route-cost flow works on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
@@ -41,6 +78,160 @@ test('catalog route-cost flow works on mobile', async ({ page }) => {
   await expectNoHorizontalOverflow(page);
 });
 
+test('default route characteristics describe the actual returned route', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+
+  await calculateCatalogRoute(page);
+
+  await expect(
+    routeAlternatives(page).getByRole('radio', { name: /Fastest/ }),
+  ).toBeChecked();
+  await expect(page.getByText('Includes tolls')).toBeVisible();
+  await expect(
+    page
+      .locator('dt', { hasText: 'Includes tolls' })
+      .locator('xpath=following-sibling::dd[1]'),
+  ).toHaveText('5 km');
+  await expect(page.getByText('Includes motorways')).toBeVisible();
+  await expect(
+    page
+      .locator('dt', { hasText: 'Includes motorways' })
+      .locator('xpath=following-sibling::dd[1]'),
+  ).toHaveText('5 km');
+  await expect(
+    page.getByText('No ferries', { exact: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByTestId('route-map-canvas')).toBeVisible();
+});
+
+test('avoid tolls reaches the API and offers a toll-free alternative', async ({
+  page,
+}) => {
+  let routeCostRequest: Record<string, unknown> | null = null;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/route-cost-estimates')) {
+      routeCostRequest = request.postDataJSON() as Record<string, unknown>;
+    }
+  });
+
+  await page.goto('/');
+  await calculateCatalogRoute(page);
+  await page.getByRole('checkbox', { name: 'Avoid toll roads' }).check();
+  await page.getByRole('button', { name: 'Calculate route' }).click();
+
+  await expect(
+    page.getByText(
+      'You asked to avoid toll roads, but this route still includes 5 km of toll roads.',
+    ),
+  ).toBeVisible();
+  await expect(page.getByText('Includes tolls')).toBeVisible();
+  await expect(page.getByRole('radio', { name: /No tolls/ })).toBeVisible();
+  expect(routeCostRequest).toMatchObject({
+    routePreferences: { avoidTolls: true },
+  });
+  await expect(page.getByText(/€\s*0/)).toHaveCount(0);
+});
+
+test('avoid motorways produces a compliant route without a conflict', async ({
+  page,
+}) => {
+  let routeCostRequest: Record<string, unknown> | null = null;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/route-cost-estimates')) {
+      routeCostRequest = request.postDataJSON() as Record<string, unknown>;
+    }
+  });
+
+  await page.goto('/');
+  await calculateCatalogRoute(page);
+  await page.getByRole('checkbox', { name: 'Avoid motorways' }).check();
+  await page.getByRole('button', { name: 'Calculate route' }).click();
+
+  await expect(page.getByText('No motorways').first()).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  expect(routeCostRequest).toMatchObject({
+    routePreferences: { avoidMotorways: true },
+  });
+});
+
+test('avoid ferries reports the unavoidable ferry conflict', async ({
+  page,
+}) => {
+  let routeCostRequest: Record<string, unknown> | null = null;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/route-cost-estimates')) {
+      routeCostRequest = request.postDataJSON() as Record<string, unknown>;
+    }
+  });
+
+  await page.goto('/');
+  await calculateCatalogRoute(page);
+  await page.getByRole('checkbox', { name: 'Avoid ferries' }).check();
+  await page.getByRole('button', { name: 'Calculate route' }).click();
+
+  await expect(page.getByText('Includes ferries')).toBeVisible();
+  await expect(
+    page.getByText(
+      'You asked to avoid ferries, but this route still requires a ferry.',
+    ),
+  ).toBeVisible();
+  expect(routeCostRequest).toMatchObject({
+    routePreferences: { avoidFerries: true },
+  });
+});
+
+test('shortest priority is included in the route request', async ({ page }) => {
+  let routeCostRequest: Record<string, unknown> | null = null;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/route-cost-estimates')) {
+      routeCostRequest = request.postDataJSON() as Record<string, unknown>;
+    }
+  });
+
+  await page.goto('/');
+  await calculateCatalogRoute(page);
+  await page.getByRole('radio', { name: 'Shortest' }).check();
+  await page.getByRole('button', { name: 'Calculate route' }).click();
+
+  await expect(page.getByText('17,5 km', { exact: true }).last()).toBeVisible();
+  await expect(
+    routeAlternatives(page).getByRole('radio', { name: /Shortest/ }),
+  ).toBeChecked();
+  expect(routeCostRequest).toMatchObject({
+    routePreferences: { priority: 'shortest' },
+  });
+});
+
+test('changing preferences marks results stale without recalculating', async ({
+  page,
+}) => {
+  let routeCostRequests = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/route-cost-estimates')) {
+      routeCostRequests += 1;
+    }
+  });
+
+  await page.goto('/');
+  await calculateCatalogRoute(page);
+
+  await expect(page.getByText('17,5 km', { exact: true }).last()).toBeVisible();
+  expect(routeCostRequests).toBe(1);
+
+  await page.getByRole('checkbox', { name: 'Avoid toll roads' }).check();
+
+  expect(routeCostRequests).toBe(1);
+  await expect(
+    page.getByText(
+      'Route preferences have changed. Recalculate to update the route.',
+    ),
+  ).toBeVisible();
+});
+
 test('alternative route selection updates results and keeps the map mounted', async ({
   page,
 }) => {
@@ -55,21 +246,38 @@ test('alternative route selection updates results and keeps the map mounted', as
   await calculateCatalogRoute(page);
 
   const mapCanvas = page.getByTestId('route-map-canvas');
+  const alternativesGroup = routeAlternatives(page);
   await expect(
-    page.getByRole('radio', { name: /Fastest route/ }),
+    alternativesGroup.getByRole('radio', { name: /Fastest/ }),
   ).toBeChecked();
   await expect(mapCanvas).toHaveAttribute(
     'data-route-alternative-id',
     'primary',
   );
 
-  const alternativeRadio = page.getByRole('radio', { name: /Alternative 1/ });
+  await expect(
+    alternativesGroup.getByRole('radio', {
+      name: /Fastest\. 27 min · 17,5 km · Tolls · Motorways · No ferries/,
+    }),
+  ).toBeVisible();
+  await expect(
+    alternativesGroup.getByRole('radio', {
+      name: /Alternative 1\. 29 min · 14 km · No tolls · Motorways · No ferries/,
+    }),
+  ).toBeVisible();
+
+  const alternativeRadio = alternativesGroup.getByRole('radio', {
+    name: /Alternative 1/,
+  });
   await alternativeRadio.click();
 
   await expect(alternativeRadio).toBeChecked();
   await expect(alternativeRadio).toBeFocused();
   await expect(page.getByText('14 km', { exact: true }).last()).toBeVisible();
-  await expect(page.getByText('25 min', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('29 min', { exact: true }).first()).toBeVisible();
+  await expect(
+    page.getByText('No tolls', { exact: true }).first(),
+  ).toBeVisible();
   await expect(mapCanvas).toHaveAttribute(
     'data-route-alternative-id',
     'alternative-1',
@@ -80,8 +288,21 @@ test('alternative route selection updates results and keeps the map mounted', as
 test('map style failure does not break route results or form use', async ({
   page,
 }) => {
-  await page.route('**/map-style.json', async (route) => {
-    await route.fulfill({ status: 500, body: 'style unavailable' });
+  // The map style URL is environment configuration (local dev may point at a
+  // hosted Stadia style while the default is the deterministic local style).
+  // Fail whichever JSON style the app is configured to load.
+  await page.route('**/*.json', async (route) => {
+    const url = route.request().url();
+
+    if (
+      url.includes('/map-style.json') ||
+      url.includes('alidade_smooth.json')
+    ) {
+      await route.fulfill({ status: 500, body: 'style unavailable' });
+      return;
+    }
+
+    await route.fallback();
   });
 
   await page.goto('/');
@@ -196,4 +417,64 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
       ),
     )
     .toBe(true);
+}
+
+function routeAlternatives(page: Page) {
+  return page.getByRole('group', { name: 'Route alternatives' });
+}
+
+async function mockLocationSearch(page: Page): Promise<void> {
+  await page.route('**/api/v1/locations/autocomplete**', async (route) => {
+    const requestUrl = new URL(route.request().url());
+    const query = normalizeSearchText(
+      requestUrl.searchParams.get('query') ?? '',
+    );
+    const items = query.includes('empty')
+      ? []
+      : e2eLocations
+          .filter((location) =>
+            normalizeSearchText(location.label).includes(query),
+          )
+          .map((location) => ({
+            id: location.id,
+            primaryText: location.name,
+            secondaryText: location.locality,
+            type: location.type,
+            precision: location.precision,
+          }));
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ items, attribution: locationAttribution }),
+    });
+  });
+
+  await page.route('**/api/v1/locations/details**', async (route) => {
+    const requestUrl = new URL(route.request().url());
+    const placeId = requestUrl.searchParams.get('placeId');
+    const location = e2eLocations.find((item) => item.id === placeId);
+
+    if (location === undefined) {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Location not found.' }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ location, attribution: locationAttribution }),
+    });
+  });
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
 }

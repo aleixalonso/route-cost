@@ -1,4 +1,5 @@
 import {
+  normalizeRoutePreferences,
   resolveRoutingProfile,
   type RoutingRequest,
   type RoutingResult,
@@ -6,6 +7,7 @@ import {
 import type { ZodSchema } from 'zod';
 
 import type { ValhallaConfig } from './valhalla.types';
+import { buildValhallaCostingOptions } from './valhalla-costing-options';
 import {
   getValhallaRouteShapes,
   normalizeValhallaRoutes,
@@ -31,16 +33,18 @@ export async function calculateValhallaRoutes(
   httpClient: ValhallaHttpPort,
 ): Promise<RoutingResult> {
   const profile = resolveRoutingProfile(request.vehicleCategory);
+  const preferences = normalizeRoutePreferences(request.preferences);
+  const costingOptions = buildValhallaCostingOptions(profile, preferences);
   const routeResponse = await httpClient.post(
     config.routePath,
-    buildValhallaRouteRequest(request, profile, config),
+    buildValhallaRouteRequest(request, profile, config, costingOptions),
     valhallaRouteResponseSchema,
   );
   const traceResponses = await Promise.all(
     getValhallaRouteShapes(routeResponse).map((shape) =>
       httpClient.post(
         config.traceAttributesPath,
-        buildValhallaTraceAttributesRequest(shape, profile),
+        buildValhallaTraceAttributesRequest(shape, profile, costingOptions),
         valhallaTraceAttributesResponseSchema,
       ),
     ),

@@ -7,8 +7,13 @@ import {
   calculateFuelCost,
   estimateRouteFuelConsumption,
 } from '@route-cost/domain';
-import type { RoutingProvider } from '@route-cost/routing';
-import { summarizeRouteDistances } from '@route-cost/routing';
+import {
+  calculateRouteCharacteristics,
+  calculateRoutePreferenceCompliance,
+  normalizeRoutePreferences,
+  type RoutingProvider,
+  summarizeRouteDistances,
+} from '@route-cost/routing';
 
 import { ResolveVehicleSelectionService } from '../../vehicles/application/resolve-vehicle-selection.service';
 import { ROUTING_PROVIDER } from './routing-provider.token';
@@ -25,10 +30,12 @@ export class EstimateRouteCostService {
     request: EstimateRouteCostRequest,
   ): Promise<EstimateRouteCostResponse> {
     const vehicle = this.resolveVehicleSelectionService.resolve(request);
+    const preferences = normalizeRoutePreferences(request.routePreferences);
     const routes = await this.routingProvider.calculateRoutes({
       origin: request.origin,
       destination: request.destination,
       vehicleCategory: vehicle.vehicleCategory,
+      preferences,
       ...(request.alternatives === undefined
         ? {}
         : { alternatives: request.alternatives }),
@@ -36,6 +43,7 @@ export class EstimateRouteCostService {
 
     return {
       vehicle,
+      routePreferences: preferences,
       alternatives: routes.alternatives.map((alternative) => {
         const summary = summarizeRouteDistances(alternative.segments);
         const fuelEstimate = estimateRouteFuelConsumption(
@@ -46,12 +54,20 @@ export class EstimateRouteCostService {
           fuelEstimate.totalLitres,
           request.fuelPrice,
         );
+        const routeCharacteristics = calculateRouteCharacteristics(
+          alternative.segments,
+        );
 
         return {
           ...alternative,
           summary,
           fuelEstimate,
           costEstimate,
+          routeCharacteristics,
+          preferenceCompliance: calculateRoutePreferenceCompliance(
+            preferences,
+            routeCharacteristics,
+          ),
         };
       }),
     };

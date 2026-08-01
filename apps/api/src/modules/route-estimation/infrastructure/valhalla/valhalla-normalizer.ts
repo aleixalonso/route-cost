@@ -129,6 +129,8 @@ function normalizeSegment(
     beginShapeIndex,
     endShapeIndex,
     ...classification,
+    isToll: toNullableBoolean(edge.toll),
+    isFerry: toFerryState(edge.use),
     ...(expectedSpeedKmh === undefined ? {} : { expectedSpeedKmh }),
     ...(speedLimitKmh === undefined ? {} : { speedLimitKmh }),
     ...(roadClass === undefined ? {} : { roadClass }),
@@ -217,6 +219,31 @@ function validateDistanceTolerance(
 
 function nullToUndefined<T>(value: T | null | undefined): T | undefined {
   return value === null ? undefined : value;
+}
+
+/**
+ * A `null`/missing provider attribute means the feature state is genuinely
+ * unknown: absence is never invented from missing data.
+ */
+function toNullableBoolean(value: boolean | null | undefined): boolean | null {
+  return value === null || value === undefined ? null : value;
+}
+
+/**
+ * Valhalla serializes ferry-like edge uses as `ferry` and `rail-ferry`.
+ * Both transport the selected road vehicle where the provider allows them.
+ * A missing `use` attribute maps to unknown.
+ */
+function toFerryState(value: string | null | undefined): boolean | null {
+  if (value === 'ferry' || value === 'rail-ferry') {
+    return true;
+  }
+
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  return false;
 }
 
 function getTraceResponse(

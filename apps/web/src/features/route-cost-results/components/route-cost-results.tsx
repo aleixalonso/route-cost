@@ -9,6 +9,12 @@ import { formatLitres } from '../../../shared/lib/format-litres';
 import { formatMoney } from '../../../shared/lib/format-money';
 import type { SelectedLocation } from '../../location-search';
 import { RouteMap } from '../../route-map';
+import {
+  buildAlternativeLabel,
+  conflictWarningText,
+  describeRouteFeature,
+  type RouteFeatureKey,
+} from '../lib/route-characteristics';
 
 const categoryOrder = ['urban', 'interurban', 'motorway', 'unknown'] as const;
 const categoryLabels = {
@@ -18,6 +24,8 @@ const categoryLabels = {
   unknown: 'Unknown',
 } as const;
 
+const characteristicOrder = ['tolls', 'motorways', 'ferries'] as const;
+
 export interface RouteCostResultsProps {
   readonly result: EstimateRouteCostResponse | null;
   readonly routeLocations?: {
@@ -25,12 +33,14 @@ export interface RouteCostResultsProps {
     readonly destination: SelectedLocation;
   } | null;
   readonly isRecalculating?: boolean;
+  readonly isPreferencesStale?: boolean;
 }
 
 export function RouteCostResults({
   result,
   routeLocations = null,
   isRecalculating = false,
+  isPreferencesStale = false,
 }: RouteCostResultsProps) {
   const [selectedAlternativeId, setSelectedAlternativeId] = useState<
     string | null
@@ -72,6 +82,8 @@ export function RouteCostResults({
     );
   }
 
+  const conflicts = selectedAlternative.preferenceCompliance.conflicts;
+
   return (
     <Surface className="grid gap-5 p-4">
       <div className="grid gap-2">
@@ -81,6 +93,11 @@ export function RouteCostResults({
             Recalculating route...
           </p>
         ) : null}
+        {isPreferencesStale ? (
+          <InlineAlert tone="info" role="status">
+            Route preferences have changed. Recalculate to update the route.
+          </InlineAlert>
+        ) : null}
       </div>
 
       {result.alternatives.length > 1 ? (
@@ -88,25 +105,38 @@ export function RouteCostResults({
           <legend className="text-sm font-semibold text-slate-900">
             Route alternatives
           </legend>
-          {result.alternatives.map((alternative, index) => (
-            <label
-              key={alternative.id}
-              className="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm"
-            >
-              <input
-                type="radio"
-                name="route-alternative"
-                value={alternative.id}
-                checked={selectedAlternative.id === alternative.id}
-                onChange={() => setSelectedAlternativeId(alternative.id)}
-              />
-              <span>
-                {index === 0 ? 'Fastest route' : `Alternative ${index}`} ·{' '}
-                {formatDistanceMetres(alternative.distanceMetres)} ·{' '}
-                {formatMoney(alternative.costEstimate.estimatedCost)}
-              </span>
-            </label>
-          ))}
+          {result.alternatives.map((alternative, index) => {
+            const label = buildAlternativeLabel(
+              index,
+              result.routePreferences.priority,
+              alternative.distanceMetres,
+              alternative.durationSeconds,
+              alternative.routeCharacteristics,
+            );
+            const accessibleLabel = `${label.title}. ${label.detail}`;
+
+            return (
+              <label
+                key={alternative.id}
+                className="flex min-h-11 items-center gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm"
+              >
+                <input
+                  type="radio"
+                  name="route-alternative"
+                  value={alternative.id}
+                  aria-label={accessibleLabel}
+                  checked={selectedAlternative.id === alternative.id}
+                  onChange={() => setSelectedAlternativeId(alternative.id)}
+                />
+                <span className="grid gap-0.5">
+                  <span className="font-semibold text-slate-950">
+                    {label.title}
+                  </span>
+                  <span className="text-slate-600">{label.detail}</span>
+                </span>
+              </label>
+            );
+          })}
         </fieldset>
       ) : null}
 
@@ -128,6 +158,51 @@ export function RouteCostResults({
           value={formatMoney(selectedAlternative.costEstimate.estimatedCost)}
         />
       </dl>
+
+      {conflicts.length > 0 ? (
+        <InlineAlert tone="error">
+          {conflictWarningText(
+            selectedAlternative.routeCharacteristics,
+            conflicts,
+          )}
+        </InlineAlert>
+      ) : null}
+
+      <section
+        className="grid gap-3"
+        aria-labelledby="route-characteristics-heading"
+      >
+        <h3
+          id="route-characteristics-heading"
+          className="font-semibold text-slate-950"
+        >
+          Route characteristics
+        </h3>
+        <dl className="grid gap-2 sm:grid-cols-2">
+          {characteristicOrder.map((feature: RouteFeatureKey) => {
+            const description = describeRouteFeature(
+              feature,
+              selectedAlternative.routeCharacteristics[feature],
+            );
+
+            return (
+              <div
+                key={feature}
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 rounded-md border border-slate-200 p-3 text-sm"
+              >
+                <dt className="text-slate-600">{description.label}</dt>
+                <dd className="font-medium text-slate-950">
+                  {description.distanceText ?? '—'}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+        <p className="text-xs leading-5 text-slate-600">
+          Characteristics describe the route that was actually returned.
+          RouteCost detects toll-road usage but does not calculate toll fees.
+        </p>
+      </section>
 
       {routeLocations === null ? (
         <section

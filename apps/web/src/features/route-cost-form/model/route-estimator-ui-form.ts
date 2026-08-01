@@ -1,5 +1,6 @@
 import type {
   FuelProduct,
+  RoutePreferences,
   VehicleRoutingCategory,
 } from '@route-cost/contracts';
 import { consumptionProfileSchema } from '@route-cost/contracts';
@@ -23,6 +24,10 @@ export interface RouteEstimatorUiFormValues {
   readonly motorwayLitresPer100Km: number;
   readonly unknownLitresPer100Km: number;
   readonly fuelPrice: number;
+  readonly avoidTolls: boolean;
+  readonly avoidMotorways: boolean;
+  readonly avoidFerries: boolean;
+  readonly priority: RoutePreferences['priority'];
 }
 
 export type RouteEstimatorFieldErrors = {
@@ -42,6 +47,10 @@ export const routeEstimatorDefaultValues: RouteEstimatorUiFormValues = {
   motorwayLitresPer100Km: 4.1,
   unknownLitresPer100Km: 3.4,
   fuelPrice: Number.NaN,
+  avoidTolls: false,
+  avoidMotorways: false,
+  avoidFerries: false,
+  priority: 'fastest',
 };
 
 export function getVehicleMode(vehicleSelect: string): VehicleMode {
@@ -133,6 +142,7 @@ export function validateRouteEstimatorForm(
           : { fuelProduct: values.fuelProduct }),
         consumptionProfile,
         fuelPrice: values.fuelPrice,
+        routePreferences: toRoutePreferences(values),
       },
       errors,
     };
@@ -145,6 +155,7 @@ export function validateRouteEstimatorForm(
       destination: values.destination,
       vehicleId: values.vehicleSelect,
       fuelPrice: values.fuelPrice,
+      routePreferences: toRoutePreferences(values),
     },
     errors,
   };
@@ -182,4 +193,15 @@ function validateConsumption(
 
 function isPositiveFinite(value: number): boolean {
   return Number.isFinite(value) && value > 0 && value <= 100;
+}
+
+function toRoutePreferences(
+  values: RouteEstimatorUiFormValues,
+): RoutePreferences {
+  return {
+    avoidTolls: values.avoidTolls,
+    avoidMotorways: values.avoidMotorways,
+    avoidFerries: values.avoidFerries,
+    priority: values.priority,
+  };
 }

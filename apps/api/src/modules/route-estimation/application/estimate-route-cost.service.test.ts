@@ -1,4 +1,7 @@
-import type { RoutingProvider } from '@route-cost/routing';
+import {
+  DEFAULT_ROUTE_PREFERENCES,
+  type RoutingProvider,
+} from '@route-cost/routing';
 import { RoutingProviderTimeoutError } from '@route-cost/routing';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -27,19 +30,68 @@ const request = {
 } as const;
 
 describe('EstimateRouteCostService', () => {
-  it('calls the provider exactly once with the routing request', async () => {
+  it('calls the provider exactly once with default preferences when omitted', async () => {
     const calculateRoutes = vi.fn().mockResolvedValue(routes());
     const provider: RoutingProvider = { calculateRoutes };
 
-    await service(provider).estimate(request);
+    const result = await service(provider).estimate(request);
 
     expect(calculateRoutes).toHaveBeenCalledOnce();
     expect(calculateRoutes).toHaveBeenCalledWith({
       origin: request.origin,
       destination: request.destination,
       vehicleCategory: 'maxi-scooter',
+      preferences: DEFAULT_ROUTE_PREFERENCES,
       alternatives: 1,
     });
+    expect(result.routePreferences).toEqual(DEFAULT_ROUTE_PREFERENCES);
+  });
+
+  it('normalizes partial preferences before calling the provider', async () => {
+    const calculateRoutes = vi.fn().mockResolvedValue(routes());
+    const provider: RoutingProvider = { calculateRoutes };
+
+    const result = await service(provider).estimate({
+      ...request,
+      routePreferences: { avoidTolls: true },
+    });
+
+    expect(calculateRoutes).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preferences: {
+          avoidTolls: true,
+          avoidMotorways: false,
+          avoidFerries: false,
+          priority: 'fastest',
+        },
+      }),
+    );
+    expect(result.routePreferences).toEqual({
+      avoidTolls: true,
+      avoidMotorways: false,
+      avoidFerries: false,
+      priority: 'fastest',
+    });
+  });
+
+  it('passes complete preferences through unchanged', async () => {
+    const calculateRoutes = vi.fn().mockResolvedValue(routes());
+    const provider: RoutingProvider = { calculateRoutes };
+    const preferences = {
+      avoidTolls: true,
+      avoidMotorways: true,
+      avoidFerries: false,
+      priority: 'shortest',
+    } as const;
+
+    await service(provider).estimate({
+      ...request,
+      routePreferences: preferences,
+    });
+
+    expect(calculateRoutes).toHaveBeenCalledWith(
+      expect.objectContaining({ preferences }),
+    );
   });
 
   it('estimates one route alternative correctly', async () => {
@@ -135,11 +187,98 @@ describe('EstimateRouteCostService', () => {
       endShapeIndex: 10,
       roadCategory: 'urban',
       classificationReason: 'urban-density',
+      isToll: false,
+      isFerry: false,
       expectedSpeedKmh: 28,
       speedLimitKmh: 30,
       roadClass: 'primary',
       density: 11,
     });
+  });
+
+  it('derives characteristics from the traced segments of each alternative', async () => {
+    const result = await service(provider()).estimate(request);
+
+    expect(result.alternatives[0]?.routeCharacteristics).toEqual({
+      tolls: {
+        status: 'known',
+        present: true,
+        distanceMetres: 30_000,
+        segmentCount: 1,
+      },
+      motorways: {
+        status: 'known',
+        present: true,
+        distanceMetres: 30_000,
+        segmentCount: 1,
+      },
+      ferries: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+    });
+    expect(result.alternatives[1]?.routeCharacteristics).toEqual({
+      tolls: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+      motorways: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+      ferries: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+    });
+  });
+
+  it('gives every alternative independent compliance data', async () => {
+    const result = await service(provider()).estimate({
+      ...request,
+      routePreferences: { avoidTolls: true, avoidMotorways: true },
+    });
+
+    expect(result.alternatives[0]?.preferenceCompliance).toEqual({
+      conflicts: ['tolls-present', 'motorways-present'],
+    });
+    expect(result.alternatives[1]?.preferenceCompliance).toEqual({
+      conflicts: [],
+    });
+  });
+
+  it('reports no conflicts when no avoidance preference is set', async () => {
+    const result = await service(provider()).estimate(request);
+
+    expect(result.alternatives[0]?.preferenceCompliance).toEqual({
+      conflicts: [],
+    });
+  });
+
+  it('keeps toll distance separate from the fuel formula', async () => {
+    const result = await service(provider()).estimate(request);
+
+    expect(result.alternatives[0]?.fuelEstimate.totalLitres).toBeCloseTo(2.7);
+    expect(result.alternatives[0]?.costEstimate.estimatedCost).toBeCloseTo(
+      4.32,
+    );
+    expect(result.alternatives[0]?.routeCharacteristics.tolls).toMatchObject({
+      present: true,
+      distanceMetres: 30_000,
+    });
+    expect(result.alternatives[0]).not.toHaveProperty('tollCost');
+    expect(
+      (result.alternatives[0] as { costEstimate?: { tollCost?: unknown } })
+        .costEstimate,
+    ).not.toHaveProperty('tollCost');
   });
 
   it('uses catalog category and consumption profile for routing and calculation', async () => {
@@ -194,6 +333,18 @@ describe('EstimateRouteCostService', () => {
     ).rejects.toBe(error);
     expect(calculateRoutes).not.toHaveBeenCalled();
   });
+
+  it('returns no provider-specific values publicly', async () => {
+    const result = await service(provider()).estimate(request);
+
+    expect(result).not.toHaveProperty('use_tolls');
+    expect(result).not.toHaveProperty('use_highways');
+    expect(result).not.toHaveProperty('use_ferry');
+    expect(result).not.toHaveProperty('use_distance');
+    expect(result).not.toHaveProperty('shortest');
+    expect(JSON.stringify(result)).not.toContain('use_tolls');
+    expect(JSON.stringify(result)).not.toContain('costing_options');
+  });
 });
 
 function provider(): RoutingProvider {
@@ -239,6 +390,8 @@ function routes() {
             endShapeIndex: 10,
             roadCategory: 'urban',
             classificationReason: 'urban-density',
+            isToll: false,
+            isFerry: false,
             expectedSpeedKmh: 28,
             speedLimitKmh: 30,
             roadClass: 'primary',
@@ -250,6 +403,8 @@ function routes() {
             endShapeIndex: 20,
             roadCategory: 'interurban',
             classificationReason: 'interurban-road-class',
+            isToll: false,
+            isFerry: false,
           },
           {
             distanceMetres: 30_000,
@@ -257,6 +412,8 @@ function routes() {
             endShapeIndex: 30,
             roadCategory: 'motorway',
             classificationReason: 'road-class-motorway',
+            isToll: true,
+            isFerry: false,
           },
           {
             distanceMetres: 5_000,
@@ -264,6 +421,8 @@ function routes() {
             endShapeIndex: 35,
             roadCategory: 'unknown',
             classificationReason: 'insufficient-data',
+            isToll: false,
+            isFerry: false,
           },
         ],
       },
@@ -279,6 +438,8 @@ function routes() {
             endShapeIndex: 10,
             roadCategory: 'urban',
             classificationReason: 'urban-density',
+            isToll: false,
+            isFerry: false,
           },
           {
             distanceMetres: 10_000,
@@ -286,6 +447,8 @@ function routes() {
             endShapeIndex: 20,
             roadCategory: 'unknown',
             classificationReason: 'insufficient-data',
+            isToll: false,
+            isFerry: false,
           },
         ],
       },

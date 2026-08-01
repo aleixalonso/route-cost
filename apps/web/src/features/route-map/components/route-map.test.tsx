@@ -367,6 +367,8 @@ function buildAlternative(
         endShapeIndex: 1,
         roadCategory: 'urban',
         classificationReason: 'urban-density',
+        isToll: false,
+        isFerry: false,
       },
       {
         distanceMetres: 5000,
@@ -375,6 +377,8 @@ function buildAlternative(
         roadCategory: id === 'primary' ? 'motorway' : 'unknown',
         classificationReason:
           id === 'primary' ? 'road-class-motorway' : 'insufficient-data',
+        isToll: id === 'primary',
+        isFerry: false,
       },
     ],
     fuelEstimate: {
@@ -406,5 +410,26 @@ function buildAlternative(
       fuelPrice: { amountPerLitre: 1.6, currency: 'EUR' },
       estimatedCost: 1.02,
     },
+    routeCharacteristics: {
+      tolls: {
+        status: 'known',
+        present: id === 'primary',
+        distanceMetres: id === 'primary' ? 5000 : 0,
+        segmentCount: id === 'primary' ? 1 : 0,
+      },
+      motorways: {
+        status: 'known',
+        present: id === 'primary',
+        distanceMetres: id === 'primary' ? 5000 : 0,
+        segmentCount: id === 'primary' ? 1 : 0,
+      },
+      ferries: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+    },
+    preferenceCompliance: { conflicts: [] },
   };
 }

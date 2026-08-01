@@ -24,9 +24,23 @@ const result = {
       unknownLitresPer100Km: 3.4,
     },
   },
+  routePreferences: {
+    avoidTolls: false,
+    avoidMotorways: false,
+    avoidFerries: false,
+    priority: 'fastest',
+  },
   alternatives: [
-    buildAlternative('primary', 17_500, 1620, 1.02),
-    buildAlternative('alternative-1', 14_000, 1500, 0.8),
+    buildAlternative('primary', 17_500, 1620, 1.02, {
+      tolls: known(true, 4_200, 1),
+      motorways: known(true, 5_000, 1),
+      ferries: known(false, 0, 0),
+    }),
+    buildAlternative('alternative-1', 14_000, 1500, 0.8, {
+      tolls: known(false, 0, 0),
+      motorways: known(true, 4_000, 1),
+      ferries: known(false, 0, 0),
+    }),
   ],
 } satisfies EstimateRouteCostResponse;
 
@@ -85,6 +99,108 @@ describe('RouteCostResults', () => {
     expect(screen.getByRole('radio', { name: /Alternative 1/ })).toHaveFocus();
   });
 
+  it('labels alternatives with observed characteristics', () => {
+    render(<RouteCostResults result={result} />);
+
+    expect(
+      screen.getByRole('radio', {
+        name: /Fastest\. 27 min · 17,5 km · Tolls · Motorways · No ferries/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('radio', {
+        name: /Alternative 1\. 25 min · 14 km · No tolls · Motorways · No ferries/,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the selected route characteristics with distances', () => {
+    render(<RouteCostResults result={result} />);
+
+    expect(screen.getByText('Route characteristics')).toBeInTheDocument();
+    expect(screen.getByText('Includes tolls')).toBeInTheDocument();
+    expect(screen.getByText('4,2 km')).toBeInTheDocument();
+    expect(screen.getByText('Includes motorways')).toBeInTheDocument();
+    expect(screen.getByText('No ferries')).toBeInTheDocument();
+  });
+
+  it('updates characteristics when switching alternatives', async () => {
+    const user = userEvent.setup();
+    render(<RouteCostResults result={result} />);
+
+    await user.click(screen.getByRole('radio', { name: /Alternative 1/ }));
+
+    expect(screen.getByText('No tolls')).toBeInTheDocument();
+    expect(screen.getByText('Includes motorways')).toBeInTheDocument();
+    expect(screen.getByText('No ferries')).toBeInTheDocument();
+  });
+
+  it('renders one grouped conflict warning when an avoidance cannot be satisfied', () => {
+    const conflicting = buildConflictResult(['tolls-present']);
+
+    render(<RouteCostResults result={conflicting} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'You asked to avoid toll roads, but this route still includes 4,2 km of toll roads.',
+    );
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('renders multiple conflicts in one grouped warning', () => {
+    const conflicting = buildConflictResult([
+      'tolls-present',
+      'motorways-present',
+    ]);
+
+    render(<RouteCostResults result={conflicting} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'You asked to avoid toll roads, but this route still includes 4,2 km of toll roads. You asked to avoid motorways, but this route still includes motorway sections.',
+    );
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('shows no conflict warning when the preference is disabled', () => {
+    render(<RouteCostResults result={result} />);
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByText(/You asked to avoid/)).not.toBeInTheDocument();
+  });
+
+  it('renders an accessible stale-preferences warning', () => {
+    render(<RouteCostResults result={result} isPreferencesStale />);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Route preferences have changed. Recalculate to update the route.',
+    );
+  });
+
+  it('never shows a monetary toll amount', () => {
+    const { container } = render(<RouteCostResults result={result} />);
+
+    expect(screen.queryByText(/Tolls:\s*€/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0\s*€.*toll/i)).not.toBeInTheDocument();
+    expect(container.textContent).not.toContain('€0');
+  });
+
+  it('renders unknown detection safely without claiming absence', () => {
+    const unknownResult = {
+      ...result,
+      alternatives: [
+        buildAlternative('primary', 17_500, 1620, 1.02, {
+          tolls: { status: 'unknown' },
+          motorways: known(false, 0, 0),
+          ferries: known(false, 0, 0),
+        }),
+      ],
+    } satisfies EstimateRouteCostResponse;
+
+    render(<RouteCostResults result={unknownResult} />);
+
+    expect(screen.getByText('Tolls unknown')).toBeInTheDocument();
+    expect(screen.getByText('No motorways')).toBeInTheDocument();
+  });
+
   it('places the map between estimate metrics and vehicle profile', () => {
     render(
       <RouteCostResults result={result} routeLocations={routeLocations} />,
@@ -111,11 +227,38 @@ describe('RouteCostResults', () => {
   });
 });
 
+function buildConflictResult(
+  conflicts: readonly (
+    'tolls-present' | 'motorways-present' | 'ferries-present'
+  )[],
+): EstimateRouteCostResponse {
+  return {
+    ...result,
+    routePreferences: {
+      avoidTolls: true,
+      avoidMotorways: true,
+      avoidFerries: true,
+      priority: 'fastest',
+    },
+    alternatives: [
+      buildAlternative('primary', 17_500, 1620, 1.02, {
+        tolls: known(true, 4_200, 1),
+        motorways: known(true, 5_000, 1),
+        ferries: known(false, 0, 0),
+      }),
+    ].map((alternative) => ({
+      ...alternative,
+      preferenceCompliance: { conflicts },
+    })),
+  };
+}
+
 function buildAlternative(
   id: string,
   distanceMetres: number,
   durationSeconds: number,
   estimatedCost: number,
+  routeCharacteristics: EstimateRouteCostResponse['alternatives'][number]['routeCharacteristics'],
 ): EstimateRouteCostResponse['alternatives'][number] {
   return {
     id,
@@ -159,5 +302,15 @@ function buildAlternative(
       fuelPrice: { amountPerLitre: 1.6, currency: 'EUR' },
       estimatedCost,
     },
+    routeCharacteristics,
+    preferenceCompliance: { conflicts: [] },
   };
+}
+
+function known(
+  present: boolean,
+  distanceMetres: number,
+  segmentCount: number,
+): EstimateRouteCostResponse['alternatives'][number]['routeCharacteristics']['tolls'] {
+  return { status: 'known', present, distanceMetres, segmentCount };
 }

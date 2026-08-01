@@ -177,6 +177,8 @@ describe('route cost contracts', () => {
         endShapeIndex: 6,
         roadCategory: 'urban',
         classificationReason: 'urban-density',
+        isToll: false,
+        isFerry: false,
       },
     ];
 
@@ -329,6 +331,12 @@ function validResponse(): EstimateRouteCostResponse {
         confidence: 'medium',
       },
     },
+    routePreferences: {
+      avoidTolls: false,
+      avoidMotorways: false,
+      avoidFerries: false,
+      priority: 'fastest',
+    },
     alternatives: [
       {
         id: 'primary',
@@ -348,6 +356,8 @@ function validResponse(): EstimateRouteCostResponse {
             endShapeIndex: 6,
             roadCategory: 'urban',
             classificationReason: 'urban-density',
+            isToll: false,
+            isFerry: false,
             expectedSpeedKmh: 28,
             speedLimitKmh: 30,
             roadClass: 'primary',
@@ -385,6 +395,29 @@ function validResponse(): EstimateRouteCostResponse {
             currency: 'EUR',
           },
           estimatedCost: 3.452,
+        },
+        routeCharacteristics: {
+          tolls: {
+            status: 'known',
+            present: false,
+            distanceMetres: 0,
+            segmentCount: 0,
+          },
+          motorways: {
+            status: 'known',
+            present: true,
+            distanceMetres: 20_900,
+            segmentCount: 1,
+          },
+          ferries: {
+            status: 'known',
+            present: false,
+            distanceMetres: 0,
+            segmentCount: 0,
+          },
+        },
+        preferenceCompliance: {
+          conflicts: [],
         },
       },
     ],

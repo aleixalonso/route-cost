@@ -23,6 +23,8 @@ describe('EstimateRouteService', () => {
                   endShapeIndex: 10,
                   roadCategory: 'urban',
                   classificationReason: 'urban-density',
+                  isToll: false,
+                  isFerry: false,
                 },
               ],
             },

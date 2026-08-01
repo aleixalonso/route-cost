@@ -2,6 +2,10 @@ import type { VehicleRoutingCategory as ContractVehicleRoutingCategory } from '@
 
 export type VehicleRoutingCategory = ContractVehicleRoutingCategory;
 
+export * from './route-characteristics.js';
+export * from './route-compliance.js';
+export * from './route-preferences.js';
+
 export type RoutingProfile = 'auto' | 'motorcycle' | 'motor_scooter';
 
 export type RoadCategory = 'urban' | 'interurban' | 'motorway' | 'unknown';
@@ -18,10 +22,13 @@ export interface Coordinate {
   longitude: number;
 }
 
+import type { RoutePreferences } from './route-preferences.js';
+
 export interface RoutingRequest {
   origin: Coordinate;
   destination: Coordinate;
   vehicleCategory: VehicleRoutingCategory;
+  preferences?: RoutePreferences;
   alternatives?: number;
 }
 
@@ -43,6 +50,18 @@ export interface RouteSegment {
   endShapeIndex: number;
   roadCategory: RoadCategory;
   classificationReason: SegmentClassificationReason;
+  /**
+   * Whether this segment uses a toll road. `null` means the provider data did
+   * not include a toll attribute for this segment, so presence is unknown.
+   * Absence is never invented from missing data.
+   */
+  isToll: boolean | null;
+  /**
+   * Whether this segment is a ferry-like segment (road ferry or rail ferry)
+   * that transports the selected road vehicle. `null` means the provider data
+   * did not include a usable `use` attribute, so presence is unknown.
+   */
+  isFerry: boolean | null;
   expectedSpeedKmh?: number;
   speedLimitKmh?: number;
   roadClass?: string;

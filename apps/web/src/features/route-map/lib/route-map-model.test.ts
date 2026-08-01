@@ -245,6 +245,8 @@ describe('buildRouteMapModel', () => {
             endShapeIndex: 9,
             roadCategory: 'urban',
             classificationReason: 'urban-density',
+            isToll: false,
+            isFerry: false,
           },
           {
             distanceMetres: 1,
@@ -252,6 +254,8 @@ describe('buildRouteMapModel', () => {
             endShapeIndex: 2,
             roadCategory: 'motorway',
             classificationReason: 'road-class-motorway',
+            isToll: true,
+            isFerry: false,
           },
         ],
       },
@@ -296,6 +300,8 @@ function buildAlternative(): EstimateRouteCostResponse['alternatives'][number] {
         endShapeIndex: 1,
         roadCategory: 'urban',
         classificationReason: 'urban-density',
+        isToll: false,
+        isFerry: false,
       },
       {
         distanceMetres: 10_000,
@@ -303,6 +309,8 @@ function buildAlternative(): EstimateRouteCostResponse['alternatives'][number] {
         endShapeIndex: 2,
         roadCategory: 'unknown',
         classificationReason: 'insufficient-data',
+        isToll: false,
+        isFerry: false,
       },
     ],
     fuelEstimate: {
@@ -334,5 +342,26 @@ function buildAlternative(): EstimateRouteCostResponse['alternatives'][number] {
       fuelPrice: { amountPerLitre: 1.6, currency: 'EUR' },
       estimatedCost: 1,
     },
+    routeCharacteristics: {
+      tolls: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+      motorways: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+      ferries: {
+        status: 'known',
+        present: false,
+        distanceMetres: 0,
+        segmentCount: 0,
+      },
+    },
+    preferenceCompliance: { conflicts: [] },
   };
 }
