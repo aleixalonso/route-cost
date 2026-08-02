@@ -54,6 +54,29 @@ describe('FuelPriceSuggestionStatus', () => {
     );
   });
 
+  it('hides the error alert once the price is entered manually', () => {
+    renderStatus({
+      isError: true,
+      fuelPriceState: { source: 'manual', amountText: '1.5' },
+    });
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('offers to load the suggested price while the price is manual and no suggestion is available', () => {
+    const onLoadSuggestion = vi.fn();
+    renderStatus({
+      fuelPriceState: { source: 'manual', amountText: '1.5' },
+      onLoadSuggestion,
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Load suggested price' }),
+    );
+
+    expect(onLoadSuggestion).toHaveBeenCalled();
+  });
+
   it('explains unsupported countries', () => {
     renderStatus({
       response: {
@@ -92,7 +115,7 @@ describe('FuelPriceSuggestionStatus', () => {
     ).toBeVisible();
   });
 
-  it('renders the suggestion with price, median, and attribution', () => {
+  it('renders the suggested price without the apply action while automatic', () => {
     renderStatus({
       response: availableResponse,
       fuelPriceState: {
@@ -106,12 +129,8 @@ describe('FuelPriceSuggestionStatus', () => {
       screen.getByText(/Suggested nearby price: 1,609 €\/L for Petrol 95 E5/u),
     ).toBeVisible();
     expect(
-      screen.getByText(/Median of 5 stations within 10 km\. Updated/u),
-    ).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Test data' })).toHaveAttribute(
-      'href',
-      'https://example.com',
-    );
+      screen.queryByRole('button', { name: 'Use suggested price' }),
+    ).not.toBeInTheDocument();
   });
 
   it('offers the apply button only while the price is manual', () => {
@@ -172,6 +191,7 @@ function renderStatus(
       hasOrigin
       hasVehicleSelection
       fuelPriceState={{ source: 'empty', amountText: '' }}
+      onLoadSuggestion={() => undefined}
       onUseSuggestion={() => undefined}
       {...props}
     />,

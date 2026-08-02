@@ -3,7 +3,7 @@ import type {
   RoutePreferences,
   VehicleSummary,
 } from '@route-cost/contracts';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { UseFormRegisterReturn } from 'react-hook-form';
@@ -82,6 +82,7 @@ export function RouteEstimatorPage() {
     [vehicleSelect, vehicles],
   );
 
+  const queryClient = useQueryClient();
   const routeCostMutation = useMutation({ mutationFn: postRouteCostEstimate });
   const currentPreferences: RoutePreferences = {
     avoidTolls,
@@ -195,8 +196,20 @@ export function RouteEstimatorPage() {
     }));
   }
 
+  function loadSuggestedPrice(): void {
+    setFuelPriceState({ source: 'empty', amountText: '' });
+    setValue('fuelPrice', Number.NaN);
+    void fuelPriceSuggestionQuery.refetch();
+  }
+
   function handleFuelPriceChange(event: ChangeEvent<HTMLInputElement>): void {
     const value = event.target.value;
+
+    if (fuelPriceState.source !== 'manual') {
+      void queryClient.cancelQueries({
+        queryKey: fuelPriceSuggestionQueryKey(suggestionRequest),
+      });
+    }
 
     setFuelPriceState((current) => ({
       source: 'manual',
@@ -400,6 +413,7 @@ export function RouteEstimatorPage() {
                 hasOrigin={origin !== null}
                 hasVehicleSelection={suggestionRequest !== null}
                 fuelPriceState={fuelPriceState}
+                onLoadSuggestion={loadSuggestedPrice}
                 onUseSuggestion={(response) => {
                   if (response.status !== 'available') {
                     return;

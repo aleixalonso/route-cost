@@ -1,11 +1,8 @@
 import type { FuelPriceSuggestionResponse } from '@route-cost/contracts';
 
-import { Button } from '../../../shared/components';
 import { InlineAlert } from '../../../shared/components';
-import { formatDistanceMetres } from '../../../shared/lib/format-distance';
 import { formatFuelPrice } from '../../../shared/lib/format-fuel-price';
 import { formatFuelProduct } from '../../../shared/lib/format-fuel-product';
-import { formatTimestamp } from '../../../shared/lib/format-timestamp';
 
 export type FuelPriceInputState =
   | {
@@ -30,6 +27,7 @@ export function FuelPriceSuggestionStatus({
   hasOrigin,
   hasVehicleSelection,
   fuelPriceState,
+  onLoadSuggestion,
   onUseSuggestion,
 }: {
   readonly response: FuelPriceSuggestionResponse | undefined;
@@ -38,6 +36,7 @@ export function FuelPriceSuggestionStatus({
   readonly hasOrigin: boolean;
   readonly hasVehicleSelection: boolean;
   readonly fuelPriceState: FuelPriceInputState;
+  readonly onLoadSuggestion: () => void;
   readonly onUseSuggestion: (response: FuelPriceSuggestionResponse) => void;
 }) {
   const latestSuggestion =
@@ -63,13 +62,29 @@ export function FuelPriceSuggestionStatus({
     );
   }
 
+  if (
+    fuelPriceState.source === 'manual' &&
+    suggestion === undefined &&
+    fuelPriceState.amountText !== ''
+  ) {
+    return (
+      <button
+        type="button"
+        onClick={onLoadSuggestion}
+        className="justify-self-start text-left text-sm font-semibold text-blue-600 underline-offset-2 hover:underline"
+      >
+        Load suggested price
+      </button>
+    );
+  }
+
   if (isLoading && response === undefined) {
     return (
       <p className="text-sm text-slate-600">Loading nearby fuel price...</p>
     );
   }
 
-  if (isError) {
+  if (isError && fuelPriceState.source !== 'manual') {
     return (
       <InlineAlert tone="error">
         The current fuel price could not be retrieved. Enter it manually.
@@ -111,48 +126,25 @@ export function FuelPriceSuggestionStatus({
   const shouldShowApply = fuelPriceState.source === 'manual';
 
   return (
-    <div className="grid gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
-      <p className="font-semibold">
-        Suggested nearby price:{' '}
-        {formatFuelPrice(
-          suggestion.suggestion.suggestedPricePerLitre.amount,
-          suggestion.suggestion.suggestedPricePerLitre.currency,
-        )}{' '}
-        for {formatFuelProduct(suggestion.fuelProduct)}
-      </p>
-      <p>
-        Median of {suggestion.suggestion.stationCount} stations within{' '}
-        {formatDistanceMetres(suggestion.suggestion.radiusMetres)}. Updated{' '}
-        {formatTimestamp(
-          suggestion.suggestion.sourceUpdatedAt ??
-            suggestion.suggestion.retrievedAt,
-        )}
-        .
-      </p>
-      {suggestion.suggestion.isStale ? (
-        <p>The latest available price data may be out of date.</p>
-      ) : null}
-      {suggestion.suggestion.attribution === undefined ? null : (
-        <p>
-          <a
-            href={suggestion.suggestion.attribution.url}
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold underline"
-          >
-            {suggestion.suggestion.attribution.label}
-          </a>
-        </p>
-      )}
+    <p className="text-sm text-slate-600">
+      Suggested nearby price:{' '}
+      {formatFuelPrice(
+        suggestion.suggestion.suggestedPricePerLitre.amount,
+        suggestion.suggestion.suggestedPricePerLitre.currency,
+      )}{' '}
+      for {formatFuelProduct(suggestion.fuelProduct)}
       {shouldShowApply ? (
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => onUseSuggestion(suggestion)}
-        >
-          Use suggested price
-        </Button>
+        <>
+          {' '}
+          <button
+            type="button"
+            onClick={() => onUseSuggestion(suggestion)}
+            className="justify-self-start text-left text-sm font-semibold text-blue-600 underline-offset-2 hover:underline"
+          >
+            Use suggested price
+          </button>
+        </>
       ) : null}
-    </div>
+    </p>
   );
 }
