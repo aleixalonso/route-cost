@@ -31,11 +31,11 @@
   },
   "dependencies": {
     "@route-cost/fuel-prices": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@route-cost/typescript-config": "workspace:*",
-    "@types/node": "^26.1.1",
+    "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "^4.1.10",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
