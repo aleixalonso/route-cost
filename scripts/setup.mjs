@@ -1,8 +1,8 @@
-import { copyFile, access } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import { join } from 'node:path';
-import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
+import { constants } from 'node:fs';
+import { access, copyFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
 
 const require = createRequire(import.meta.url);
 const rootPackage = require('../package.json');
@@ -19,7 +19,7 @@ try {
   execFileSync('pnpm', ['--version'], { stdio: 'ignore' });
 } catch {
   process.stderr.write(
-    'pnpm is not available. Run corepack enable, then try again.\n',
+    `pnpm is not available. Install it with: npm i -g pnpm@${rootPackage.engines.pnpm}\n`,
   );
   process.exitCode = 1;
 }

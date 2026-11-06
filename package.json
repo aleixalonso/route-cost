@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "packageManager": "pnpm@10.34.3",
   "engines": {
-    "node": "24.14.1",
+    "node": "26.12.1",
     "pnpm": "10.34.3"
   },
   "scripts": {

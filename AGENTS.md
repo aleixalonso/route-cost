@@ -99,8 +99,8 @@ Use relative imports within a workspace. Do not introduce broad aliases such as 
 
 ## Tooling Notes
 
-- The repo targets Node.js `24.14.1` and pnpm `10.34.3`.
-- Use Corepack and the pinned package manager.
+- The repo targets Node.js `26.12.1` and pnpm `10.34.3`.
+- pnpm is installed with `npm i -g pnpm@10.34.3` because Node no longer ships Corepack.
 - `pnpm setup` is a pnpm built-in in pnpm 10. Use the project script explicitly:
 
 ```bash

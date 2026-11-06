@@ -7,14 +7,13 @@ This repository is in its initial development phase. It contains a portable mono
 ## Requirements
 
 - Node.js Active LTS, pinned in `.node-version` and `.nvmrc`
-- Corepack
-- pnpm
+- pnpm, installed globally (the version is pinned in `packageManager`)
 - Docker, optional
 
 ## Quick Start
 
 ```bash
-corepack enable
+npm i -g pnpm@10.34.3
 pnpm install
 pnpm setup
 pnpm dev
