@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: 05:00
+      timezone: Europe/Madrid
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
@@ -12,6 +15,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: 05:00
+      timezone: Europe/Madrid
     open-pull-requests-limit: 3
     groups:
       actions-minor-and-patch:
@@ -23,6 +29,9 @@ updates:
     directory: /apps/api
     schedule:
       interval: weekly
+      day: monday
+      time: 05:00
+      timezone: Europe/Madrid
     open-pull-requests-limit: 3
     groups:
       docker-minor-and-patch:
@@ -31,6 +40,9 @@ updates:
     directory: /apps/web
     schedule:
       interval: weekly
+      day: monday
+      time: 05:00
+      timezone: Europe/Madrid
     open-pull-requests-limit: 3
     groups:
       docker-minor-and-patch:
@@ -39,4 +51,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: 05:00
+      timezone: Europe/Madrid
     open-pull-requests-limit: 3
