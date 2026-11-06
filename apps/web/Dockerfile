@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY --from=pruner /repo/out/full/ .
 RUN pnpm turbo build --filter=@route-cost/web...
 
-FROM nginxinc/nginx-unprivileged:1.29.3-alpine AS runner
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine AS runner
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /repo/apps/web/dist /usr/share/nginx/html
 EXPOSE 8080
