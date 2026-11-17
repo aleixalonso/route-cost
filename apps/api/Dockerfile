@@ -1,4 +1,4 @@
-FROM node:26.12.1-bookworm-slim AS base
+FROM node:26.13.0-bookworm-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN npm i -g pnpm@10.34.3
@@ -17,7 +17,7 @@ COPY --from=pruner /repo/out/full/ .
 RUN pnpm turbo build --filter=@route-cost/api...
 RUN pnpm deploy --legacy --filter=@route-cost/api --prod /prod/api
 
-FROM node:26.12.1-bookworm-slim AS runner
+FROM node:26.13.0-bookworm-slim AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 USER node
