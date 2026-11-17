@@ -35,9 +35,16 @@ const e2eLocations = [
 
 test.beforeEach(async ({ page }) => {
   await mockLocationSearch(page);
+  await mockFuelPriceSuggestion(page);
 });
-
 test('catalog route-cost flow works on mobile', async ({ page }) => {
+  const routeCostRequests: Record<string, unknown>[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/route-cost-estimates')) {
+      routeCostRequests.push(request.postDataJSON() as Record<string, unknown>);
+    }
+  });
+
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
 
@@ -46,7 +53,11 @@ test('catalog route-cost flow works on mobile', async ({ page }) => {
   await expect(page.getByText('17,5 km', { exact: true }).last()).toBeVisible();
   await expect(page.getByText('27 min', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('0,63 L')).toBeVisible();
-  await expect(page.getByText(/1,01\s€/).last()).toBeVisible();
+  await expect(estimatedCostValue(page)).toHaveText(expectedCatalogCost);
+  expect(routeCostRequests).toHaveLength(1);
+  expect(routeCostRequests[0]).toMatchObject({
+    fuelPrice: { amountPerLitre: catalogFuelPricePerLitre, currency: 'EUR' },
+  });
   await expect(
     page.getByText(/Honda Forza 350 · Catalog vehicle/),
   ).toBeVisible();
@@ -391,6 +402,31 @@ test('unknown routes show the 404 page', async ({ page }) => {
   ).toBeVisible();
 });
 
+const catalogFuelPricePerLitre = 1.6;
+const catalogRouteKilometres = {
+  urban: 7.5,
+  interurban: 5,
+  motorway: 5,
+};
+const catalogConsumptionLitresPer100Kilometres = {
+  urban: 3.7,
+  interurban: 3.1,
+  motorway: 4.0,
+};
+const catalogTotalLitres =
+  (catalogRouteKilometres.urban *
+    catalogConsumptionLitresPer100Kilometres.urban +
+    catalogRouteKilometres.interurban *
+      catalogConsumptionLitresPer100Kilometres.interurban +
+    catalogRouteKilometres.motorway *
+      catalogConsumptionLitresPer100Kilometres.motorway) /
+  100;
+// 0.6325 L * 1.6 €/L = 1.012 € -> "1,01 €".
+const expectedCatalogCost = new Intl.NumberFormat('es-ES', {
+  style: 'currency',
+  currency: 'EUR',
+}).format(catalogTotalLitres * catalogFuelPricePerLitre);
+
 async function calculateCatalogRoute(page: Page) {
   await page.getByRole('combobox', { name: 'Origin' }).fill('Pla');
   await page.getByRole('button', { name: /Plaça de Catalunya/ }).click();
@@ -405,7 +441,9 @@ async function calculateCatalogRoute(page: Page) {
   );
 
   await page.getByLabel('Vehicle').selectOption('honda-forza-350-2025');
-  await page.getByRole('spinbutton', { name: 'Fuel price' }).fill('1.6');
+  await page
+    .getByRole('spinbutton', { name: 'Fuel price' })
+    .fill(String(catalogFuelPricePerLitre));
   await page.getByRole('button', { name: 'Calculate route' }).click();
 }
 
@@ -421,6 +459,12 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 
 function routeAlternatives(page: Page) {
   return page.getByRole('group', { name: 'Route alternatives' });
+}
+
+function estimatedCostValue(page: Page) {
+  return page
+    .locator('dt', { hasText: 'Estimated cost' })
+    .locator('xpath=following-sibling::dd[1]');
 }
 
 async function mockLocationSearch(page: Page): Promise<void> {
@@ -468,6 +512,23 @@ async function mockLocationSearch(page: Page): Promise<void> {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ location, attribution: locationAttribution }),
+    });
+  });
+}
+
+async function mockFuelPriceSuggestion(page: Page): Promise<void> {
+  // Pin a no-prices answer so a late suggestion cannot overwrite the manual price;
+  // that race rendered 1,02 € instead of 1,01 €.
+  await page.route('**/api/v1/fuel-price-suggestions**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        status: 'no-nearby-prices',
+        country: { code: 'ES' },
+        fuelProduct: 'petrol-95-e5',
+        maximumRadiusMetres: 25000,
+      }),
     });
   });
 }
