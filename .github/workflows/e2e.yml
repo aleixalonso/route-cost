@@ -1,9 +1,8 @@
 name: E2E
 
+# Runs on the PR only: a squash merge keeps the tree the PR validated, so a push run repeats the same work for the same minutes.
 on:
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
 
 permissions:
@@ -16,7 +15,7 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     env:
       CI: true
     steps:

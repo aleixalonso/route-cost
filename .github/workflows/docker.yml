@@ -1,9 +1,8 @@
 name: Docker
 
+# Runs on the PR only: a squash merge keeps the tree the PR validated, so a push run repeats the same work for the same minutes.
 on:
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
 
 permissions:
