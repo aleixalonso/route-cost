@@ -3,7 +3,6 @@ import {
   Get,
   Query,
   UseFilters,
-  UseGuards,
   UsePipes,
   Version,
 } from '@nestjs/common';
@@ -16,7 +15,7 @@ import {
   ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import {
   type AutocompleteLocationsQuery,
   autocompleteLocationsQuerySchema,
@@ -42,7 +41,6 @@ import { GeocodingProviderExceptionFilter } from './geocoding-provider-exception
 @ApiTags('locations')
 @Controller('locations')
 @UseFilters(GeocodingProviderExceptionFilter)
-@UseGuards(ThrottlerGuard)
 export class LocationsController {
   public constructor(
     private readonly autocompleteLocationsService: AutocompleteLocationsService,

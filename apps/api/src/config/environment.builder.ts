@@ -16,6 +16,7 @@ export function buildEnvironment(
     PORT: configService.get('PORT', { infer: true }),
     CORS_ORIGINS: configService.get('CORS_ORIGINS', { infer: true }),
     SWAGGER_ENABLED: configService.get('SWAGGER_ENABLED', { infer: true }),
+    TRUST_PROXY: configService.get('TRUST_PROXY', { infer: true }),
     ROUTING_PROVIDER: configService.get('ROUTING_PROVIDER', { infer: true }),
     VALHALLA_BASE_URL: configService.get('VALHALLA_BASE_URL', { infer: true }),
     VALHALLA_ROUTE_PATH: configService.get('VALHALLA_ROUTE_PATH', {

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 const pathSchema = z.string().startsWith('/');
+const environmentBooleanSchema = z
+  .enum(['true', 'false'])
+  .transform((value) => value === 'true');
 
 const environmentSchema = z
   .object({
@@ -10,7 +13,8 @@ const environmentSchema = z
     HOST: z.string().default('0.0.0.0'),
     PORT: z.coerce.number().int().positive().default(3001),
     CORS_ORIGINS: z.string().default('http://localhost:5173'),
-    SWAGGER_ENABLED: z.coerce.boolean().default(true),
+    SWAGGER_ENABLED: environmentBooleanSchema.prefault('true'),
+    TRUST_PROXY: environmentBooleanSchema.prefault('false'),
     ROUTING_PROVIDER: z.enum(['mock', 'valhalla']).default('mock'),
     VALHALLA_BASE_URL: z
       .string()
@@ -162,6 +166,16 @@ const environmentSchema = z
   });
 
 export type Environment = z.infer<typeof environmentSchema>;
+
+/**
+ * Parses the process environment directly. The HTTP adapter needs the proxy
+ * flag before Nest instantiates ConfigModule, so it cannot wait for the
+ * ENVIRONMENT provider. Deployments set TRUST_PROXY in the process/container
+ * environment.
+ */
+export function loadEnvironment(): Environment {
+  return environmentSchema.parse(process.env);
+}
 
 export function validateEnvironment(values: NodeJS.ProcessEnv): Environment {
   return environmentSchema.parse(values);

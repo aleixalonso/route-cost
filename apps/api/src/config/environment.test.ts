@@ -3,6 +3,34 @@ import { describe, expect, it } from 'vitest';
 import { validateEnvironment } from './environment';
 
 describe('validateEnvironment', () => {
+  it('parses disabled Swagger from the string false', () => {
+    expect(
+      validateEnvironment({ SWAGGER_ENABLED: 'false' }).SWAGGER_ENABLED,
+    ).toBe(false);
+  });
+
+  it('parses enabled Swagger from the string true', () => {
+    expect(
+      validateEnvironment({ SWAGGER_ENABLED: 'true' }).SWAGGER_ENABLED,
+    ).toBe(true);
+  });
+
+  it('enables Swagger by default', () => {
+    expect(validateEnvironment({}).SWAGGER_ENABLED).toBe(true);
+  });
+
+  it('rejects invalid Swagger flags', () => {
+    expect(() => validateEnvironment({ SWAGGER_ENABLED: 'yes' })).toThrow();
+  });
+
+  it('does not trust proxies by default', () => {
+    expect(validateEnvironment({}).TRUST_PROXY).toBe(false);
+  });
+
+  it('parses trusted proxies from the string true', () => {
+    expect(validateEnvironment({ TRUST_PROXY: 'true' }).TRUST_PROXY).toBe(true);
+  });
+
   it('provides safe local defaults', () => {
     expect(validateEnvironment({})).toMatchObject({
       NODE_ENV: 'development',
