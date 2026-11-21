@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
 
 import type { Environment } from '../../config/environment';
 import { EnvironmentModule } from '../../config/environment.module';
@@ -22,15 +21,7 @@ import {
 import { LocationsController } from './presentation/locations.controller';
 
 @Module({
-  imports: [
-    EnvironmentModule,
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60_000,
-        limit: 120,
-      },
-    ]),
-  ],
+  imports: [EnvironmentModule],
   controllers: [LocationsController],
   providers: [
     AutocompleteLocationsService,

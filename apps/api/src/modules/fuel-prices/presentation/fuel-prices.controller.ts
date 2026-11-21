@@ -18,6 +18,7 @@ import {
   ApiTags,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   type FuelPriceSuggestionRequest,
   fuelPriceSuggestionRequestSchema,
@@ -39,6 +40,7 @@ export class FuelPricesController {
 
   @Post()
   @Version('1')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiBody({
     description:

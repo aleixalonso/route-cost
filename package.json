@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "packageManager": "pnpm@10.34.3",
   "engines": {
-    "node": "26.12.1",
+    "node": "26.13.1",
     "pnpm": "10.34.3"
   },
   "scripts": {
@@ -24,7 +24,7 @@
     "routing:verify": "tsx --tsconfig scripts/tsconfig.verify.json scripts/verify-valhalla-routing.mts",
     "geocoding:verify": "tsx --tsconfig scripts/tsconfig.verify.json scripts/verify-stadia-geocoding.mts",
     "fuel-prices:verify:spain": "tsx --tsconfig scripts/tsconfig.verify.json scripts/verify-spain-fuel-prices.mts",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm test:integration && pnpm build",
     "setup": "node scripts/setup.mjs",
     "docker:build": "docker compose build",
     "docker:up": "docker compose up --build",

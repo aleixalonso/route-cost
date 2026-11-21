@@ -18,7 +18,7 @@ The dynamic demo recording is also available as `docs/media/estimate-flow.mp4`.
 
 ## Requirements
 
-- Node.js 26.12.1 (pinned in `.node-version` and `.nvmrc`)
+- Node.js 26.13.1 (pinned in `.node-version` and `.nvmrc`)
 - pnpm 10.34.3 (pinned in `packageManager`)
 - Docker, optional
 
@@ -311,6 +311,18 @@ The mock provider is the default and requires no network access:
 ROUTING_PROVIDER=mock
 GEOCODING_PROVIDER=mock
 ```
+
+These API flags control access to the docs and how the API identifies clients.
+
+```dotenv
+SWAGGER_ENABLED=true
+TRUST_PROXY=false
+THROTTLING_ENABLED=true
+```
+
+`SWAGGER_ENABLED=false` disables `/docs` and `/docs-json`. `TRUST_PROXY=true` makes Fastify trust `X-Forwarded-For` so per-IP throttling uses the client address behind the nginx reverse proxy. Enable it only behind a proxy that sets that header. Set `TRUST_PROXY` in Compose or the shell so it is available in the process or container environment when Fastify starts. Fastify's bootstrap configuration reads this flag directly from the process environment.
+
+`THROTTLING_ENABLED` is a test harness switch that must stay `true` in every deployed environment, and the automated browser suite sets it to `false` in its Playwright `webServer` configuration to turn off per-IP throttling.
 
 The web map style is browser configuration and must be safe to expose:
 

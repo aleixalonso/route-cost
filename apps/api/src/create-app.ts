@@ -8,14 +8,16 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
-import type { Environment } from './config/environment';
+import { type Environment, loadEnvironment } from './config/environment';
 import { ENVIRONMENT } from './config/environment.token';
 
 export async function createApp(): Promise<NestFastifyApplication> {
+  const bootstrapEnvironment = loadEnvironment();
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
       bodyLimit: 1_048_576,
+      trustProxy: bootstrapEnvironment.TRUST_PROXY,
     }),
     {
       bufferLogs: true,

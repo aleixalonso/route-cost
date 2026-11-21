@@ -17,6 +17,7 @@ import {
   ApiServiceUnavailableResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   type EstimateRouteCostRequest,
   estimateRouteCostRequestSchema,
@@ -93,6 +94,7 @@ export class RouteCostEstimatesController {
 
   @Post()
   @Version('1')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiBody({
     description:
