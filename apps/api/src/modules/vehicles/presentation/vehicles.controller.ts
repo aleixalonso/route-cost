@@ -8,10 +8,11 @@ import {
   Version,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiQuery,
   ApiTags,
+  ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import type {
   VehicleDetailResponse,
@@ -21,6 +22,7 @@ import type {
 import { vehicleListQuerySchema } from '@route-cost/contracts';
 
 import { ZodValidationPipe } from '../../../common/zod-validation.pipe';
+import { apiSchemaRef, ApiZodQuery } from '../../../openapi/zod-openapi';
 import { GetVehicleService } from '../application/get-vehicle.service';
 import { ListVehiclesService } from '../application/list-vehicles.service';
 import { VehicleNotFoundExceptionFilter } from './vehicle-not-found-exception.filter';
@@ -36,12 +38,19 @@ export class VehiclesController {
 
   @Get()
   @Version('1')
-  @ApiQuery({ name: 'search', required: false })
-  @ApiQuery({ name: 'manufacturer', required: false })
-  @ApiQuery({ name: 'vehicleCategory', required: false })
-  @ApiQuery({ name: 'fuelType', required: false })
-  @ApiQuery({ name: 'powertrainType', required: false })
-  @ApiOkResponse({ description: 'Curated vehicle catalog entries.' })
+  @ApiZodQuery(vehicleListQuerySchema)
+  @ApiTooManyRequestsResponse({
+    description: 'Rate limited.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
+  @ApiOkResponse({
+    schema: apiSchemaRef('VehicleListResponse'),
+    description: 'Curated vehicle catalog entries.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
   @UsePipes(
     new ZodValidationPipe(vehicleListQuerySchema, 'INVALID_VEHICLE_QUERY'),
   )
@@ -51,8 +60,18 @@ export class VehiclesController {
 
   @Get(':vehicleId')
   @Version('1')
-  @ApiOkResponse({ description: 'Complete curated vehicle catalog entry.' })
-  @ApiNotFoundResponse({ description: 'Vehicle not found.' })
+  @ApiTooManyRequestsResponse({
+    description: 'Rate limited.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
+  @ApiOkResponse({
+    schema: apiSchemaRef('VehicleDetailResponse'),
+    description: 'Complete curated vehicle catalog entry.',
+  })
+  @ApiNotFoundResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Vehicle not found.',
+  })
   public get(@Param('vehicleId') vehicleId: string): VehicleDetailResponse {
     return this.getVehicleService.get(vehicleId);
   }

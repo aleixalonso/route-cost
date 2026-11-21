@@ -40,6 +40,23 @@ Domain contains deterministic business logic with no framework, network, or pers
 
 Infrastructure contains adapters such as the initial mock routing provider. Full hexagonal structure is not required for trivial endpoints, but provider-specific models must not leak into contracts or domain logic.
 
+## API Contract
+
+The OpenAPI document derives its named component schemas from the Zod contracts in `packages/contracts` through the registry in `apps/api/src/openapi`. Component names follow the registry keys. `/docs-json` is the machine-readable contract; operations reference those components for request and response bodies.
+
+Every HTTP error has the same envelope:
+
+```json
+{
+  "statusCode": 400,
+  "code": "INVALID_LOCATION_QUERY",
+  "message": "Validation failed",
+  "fields": ["query"]
+}
+```
+
+All four keys are always present. `statusCode` matches the HTTP status. Validation failures list offending request field paths in `fields`; every other error uses `[]`. Application and provider failures retain their stable machine codes. Framework failures, including the throttler's 429 response, receive codes derived from HTTP status. The shared envelope schema appears as `components.schemas.ErrorResponse` in OpenAPI.
+
 ## Web Frontend
 
 The first web vertical slice is implemented at `/` as a mobile-first route estimator. It uses React, Vite, Tailwind CSS, TanStack Query, React Hook Form, React Router, and shared Zod contracts.

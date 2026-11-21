@@ -76,6 +76,7 @@ describe('VehiclesController HTTP', () => {
       statusCode: 404,
       code: 'VEHICLE_NOT_FOUND',
       message: 'The requested vehicle was not found.',
+      fields: [],
     });
   });
 });

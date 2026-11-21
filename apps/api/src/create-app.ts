@@ -8,8 +8,10 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
+import { ApiExceptionFilter } from './common/api-exception.filter';
 import { type Environment, loadEnvironment } from './config/environment';
 import { ENVIRONMENT } from './config/environment.token';
+import { buildApiSchemaComponents } from './openapi/api-schemas';
 
 export async function createApp(): Promise<NestFastifyApplication> {
   const bootstrapEnvironment = loadEnvironment();
@@ -34,6 +36,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+  app.useGlobalFilters(new ApiExceptionFilter());
 
   if (environment.SWAGGER_ENABLED) {
     const config = new DocumentBuilder()
@@ -42,6 +45,11 @@ export async function createApp(): Promise<NestFastifyApplication> {
       .setVersion('1.0')
       .build();
     const document = SwaggerModule.createDocument(app, config);
+    document.components ??= {};
+    document.components.schemas = {
+      ...document.components.schemas,
+      ...buildApiSchemaComponents(),
+    };
     SwaggerModule.setup('docs', app, document, {
       jsonDocumentUrl: 'docs-json',
     });

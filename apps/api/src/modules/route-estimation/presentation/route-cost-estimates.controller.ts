@@ -16,6 +16,7 @@ import {
   ApiOkResponse,
   ApiServiceUnavailableResponse,
   ApiTags,
+  ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import {
@@ -25,6 +26,7 @@ import {
 } from '@route-cost/contracts';
 
 import { ZodValidationPipe } from '../../../common/zod-validation.pipe';
+import { apiSchemaRef } from '../../../openapi/zod-openapi';
 import { VehicleNotFoundExceptionFilter } from '../../vehicles/presentation/vehicle-not-found-exception.filter';
 import { EstimateRouteCostService } from '../application/estimate-route-cost.service';
 import { RoutingProviderExceptionFilter } from './routing-provider-exception.filter';
@@ -99,49 +101,63 @@ export class RouteCostEstimatesController {
   @ApiBody({
     description:
       'Route request with exactly one vehicle selection mode: vehicleId from the catalog, or custom vehicleCategory with consumptionProfile. Catalog profiles may contain estimated data; full provenance is available from the vehicle detail endpoint.\n\nRoute preferences are optional. Avoidance preferences influence routing but are not absolute guarantees: the returned route is inspected and its actual characteristics are reported per alternative, including when an avoided feature is still present. Requests omitting routePreferences keep the previous behavior and resolve to the documented defaults. Toll presence describes distance, never toll price.',
-    schema: {
-      examples: {
-        catalogVehicle: {
-          summary: 'Catalog vehicle with default preferences',
-          value: {
-            ...catalogRouteCostEstimateExample,
-            ...defaultPreferencesExample,
-          },
+    schema: apiSchemaRef('EstimateRouteCostRequest'),
+    examples: {
+      catalogVehicle: {
+        summary: 'Catalog vehicle with default preferences',
+        value: {
+          ...catalogRouteCostEstimateExample,
+          ...defaultPreferencesExample,
         },
-        customProfile: {
-          summary: 'Custom profile with default preferences',
-          value: {
-            ...customRouteCostEstimateExample,
-            ...defaultPreferencesExample,
-          },
+      },
+      customProfile: {
+        summary: 'Custom profile with default preferences',
+        value: {
+          ...customRouteCostEstimateExample,
+          ...defaultPreferencesExample,
         },
-        avoidTolls: {
-          summary: 'Avoid toll roads',
-          value: {
-            ...catalogRouteCostEstimateExample,
-            ...avoidTollsPreferencesExample,
-          },
+      },
+      avoidTolls: {
+        summary: 'Avoid toll roads',
+        value: {
+          ...catalogRouteCostEstimateExample,
+          ...avoidTollsPreferencesExample,
         },
-        shortestWithoutMotorways: {
-          summary: 'Shortest route without motorways',
-          value: {
-            ...catalogRouteCostEstimateExample,
-            ...shortestWithoutMotorwaysPreferencesExample,
-          },
+      },
+      shortestWithoutMotorways: {
+        summary: 'Shortest route without motorways',
+        value: {
+          ...catalogRouteCostEstimateExample,
+          ...shortestWithoutMotorwaysPreferencesExample,
         },
       },
     },
   })
+  @ApiTooManyRequestsResponse({
+    description: 'Rate limited.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
   @ApiOkResponse({
+    schema: apiSchemaRef('EstimateRouteCostResponse'),
     description:
       'Route alternatives with category fuel consumption, estimated cost, observed route characteristics, applied preferences, and per-alternative preference compliance. Characteristics describe the actual returned route; every alternative may differ. Toll presence does not include toll price.',
   })
-  @ApiBadRequestResponse({ description: 'Validation error.' })
-  @ApiNotFoundResponse({ description: 'Route not found.' })
+  @ApiBadRequestResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Validation error.',
+  })
+  @ApiNotFoundResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Route not found.',
+  })
   @ApiServiceUnavailableResponse({
+    schema: apiSchemaRef('ErrorResponse'),
     description: 'Routing provider unavailable or rate limited.',
   })
-  @ApiGatewayTimeoutResponse({ description: 'Routing provider timeout.' })
+  @ApiGatewayTimeoutResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Routing provider timeout.',
+  })
   @UsePipes(
     new ZodValidationPipe(
       estimateRouteCostRequestSchema,
