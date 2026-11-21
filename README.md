@@ -4,10 +4,22 @@ RouteCost estimates the real cost of a vehicle route using route characteristics
 
 This repository is in its initial development phase. It contains a portable monorepo foundation, health checks, backend location search, routing-provider integration, route fuel/cost estimation, and a small static vehicle catalog.
 
+The default providers are `mock`, so the whole stack starts with no API keys at all.
+
+## Demo
+
+![RouteCost route estimate flow](docs/media/estimate-flow.png)
+
+End-to-end estimate flow recorded against the Stadia basemap and Valhalla routing: pick two Barcelona locations, choose the catalog Honda Forza 350, set the fuel price and read the distance, litres, cost, road-category breakdown and route map. The repository still defaults to the built-in `mock` providers and starts with no API keys.
+
+![Animated demo of the estimate flow](docs/media/estimate-flow.gif)
+
+The dynamic demo recording is also available as `docs/media/estimate-flow.mp4`.
+
 ## Requirements
 
-- Node.js Active LTS, pinned in `.node-version` and `.nvmrc`
-- pnpm, installed globally (the version is pinned in `packageManager`)
+- Node.js 26.12.1 (pinned in `.node-version` and `.nvmrc`)
+- pnpm 10.34.3 (pinned in `packageManager`)
 - Docker, optional
 
 ## Quick Start
@@ -15,7 +27,7 @@ This repository is in its initial development phase. It contains a portable mono
 ```bash
 npm i -g pnpm@10.34.3
 pnpm install
-pnpm setup
+pnpm run setup
 pnpm dev
 ```
 
@@ -291,7 +303,7 @@ The Docker web app is exposed at http://localhost:8080 and proxies `/api/` to th
 
 ## Environment Variables
 
-`pnpm setup` copies `.env.example` files only when a local `.env` does not already exist.
+`pnpm run setup` copies `.env.example` files only when a local `.env` does not already exist.
 
 The mock provider is the default and requires no network access:
 
