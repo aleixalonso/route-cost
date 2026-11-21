@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { apiErrorResponse } from '../../../common/api-error';
 import { VehicleNotFoundApplicationError } from '../application/vehicle-not-found.error';
 
 @Catch(VehicleNotFoundApplicationError)
@@ -16,10 +17,13 @@ export class VehicleNotFoundExceptionFilter implements ExceptionFilter {
   ): void {
     const response = host.switchToHttp().getResponse<FastifyReply>();
 
-    void response.status(HttpStatus.NOT_FOUND).send({
-      statusCode: HttpStatus.NOT_FOUND,
-      code: 'VEHICLE_NOT_FOUND',
-      message: 'The requested vehicle was not found.',
-    });
+    void response.status(HttpStatus.NOT_FOUND).send(
+      apiErrorResponse({
+        statusCode: HttpStatus.NOT_FOUND,
+        code: 'VEHICLE_NOT_FOUND',
+        message: 'The requested vehicle was not found.',
+        fields: [],
+      }),
+    );
   }
 }

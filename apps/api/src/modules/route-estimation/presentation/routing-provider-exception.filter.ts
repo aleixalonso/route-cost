@@ -14,11 +14,10 @@ import {
 } from '@route-cost/routing';
 import type { FastifyReply } from 'fastify';
 
-interface ErrorResponse {
-  statusCode: number;
-  code: string;
-  message: string;
-}
+import {
+  type ApiErrorResponse,
+  apiErrorResponse,
+} from '../../../common/api-error';
 
 @Catch(
   RoutingProviderAuthenticationError,
@@ -37,50 +36,56 @@ export class RoutingProviderExceptionFilter implements ExceptionFilter {
   }
 }
 
-function mapRoutingProviderError(exception: Error): ErrorResponse {
+function mapRoutingProviderError(exception: Error): ApiErrorResponse {
   if (exception instanceof RoutingProviderRouteNotFoundError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.NOT_FOUND,
       code: 'ROUTE_NOT_FOUND',
       message: 'No route was found for the requested coordinates.',
-    };
+      fields: [],
+    });
   }
 
   if (exception instanceof RoutingProviderAuthenticationError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.BAD_GATEWAY,
       code: 'ROUTING_PROVIDER_AUTHENTICATION_FAILED',
       message: 'The routing service could not be authenticated.',
-    };
+      fields: [],
+    });
   }
 
   if (exception instanceof RoutingProviderRateLimitError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.SERVICE_UNAVAILABLE,
       code: 'ROUTING_PROVIDER_RATE_LIMITED',
       message: 'The routing service is temporarily rate limited.',
-    };
+      fields: [],
+    });
   }
 
   if (exception instanceof RoutingProviderTimeoutError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.GATEWAY_TIMEOUT,
       code: 'ROUTING_PROVIDER_TIMEOUT',
       message: 'The routing service timed out.',
-    };
+      fields: [],
+    });
   }
 
   if (exception instanceof RoutingProviderInvalidResponseError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.BAD_GATEWAY,
       code: 'ROUTING_PROVIDER_INVALID_RESPONSE',
       message: 'The routing service returned an invalid response.',
-    };
+      fields: [],
+    });
   }
 
-  return {
+  return apiErrorResponse({
     statusCode: HttpStatus.SERVICE_UNAVAILABLE,
     code: 'ROUTING_PROVIDER_UNAVAILABLE',
     message: 'The routing service is temporarily unavailable.',
-  };
+    fields: [],
+  });
 }

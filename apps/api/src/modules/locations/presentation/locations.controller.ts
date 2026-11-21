@@ -11,9 +11,9 @@ import {
   ApiGatewayTimeoutResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiQuery,
   ApiServiceUnavailableResponse,
   ApiTags,
+  ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import {
@@ -32,6 +32,7 @@ import {
 } from '@route-cost/contracts';
 
 import { ZodValidationPipe } from '../../../common/zod-validation.pipe';
+import { apiSchemaRef, ApiZodQuery } from '../../../openapi/zod-openapi';
 import { AutocompleteLocationsService } from '../application/autocomplete-locations.service';
 import { GetLocationDetailsService } from '../application/get-location-details.service';
 import { ReverseGeocodeService } from '../application/reverse-geocode.service';
@@ -52,21 +53,35 @@ export class LocationsController {
   @Get('autocomplete')
   @Version('1')
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
-  @ApiQuery({ name: 'query', required: true, example: 'Plaça Cat' })
-  @ApiQuery({ name: 'limit', required: false, example: 5 })
-  @ApiQuery({ name: 'language', required: false, example: 'ca' })
-  @ApiQuery({ name: 'countryCode', required: false, example: 'ES' })
-  @ApiQuery({ name: 'focusLatitude', required: false, example: 41.387 })
-  @ApiQuery({ name: 'focusLongitude', required: false, example: 2.17 })
+  @ApiZodQuery(autocompleteLocationsQuerySchema, {
+    query: 'Plaça Cat',
+    limit: 5,
+    language: 'ca',
+    countryCode: 'ES',
+    focusLatitude: 41.387,
+    focusLongitude: 2.17,
+  })
+  @ApiTooManyRequestsResponse({
+    description: 'Rate limited.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
   @ApiOkResponse({
+    schema: apiSchemaRef('AutocompleteLocationsResponse'),
     description:
       'Autocomplete suggestions. Suggestions do not contain coordinates; call details after selection.',
   })
-  @ApiBadRequestResponse({ description: 'Validation error.' })
+  @ApiBadRequestResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Validation error.',
+  })
   @ApiServiceUnavailableResponse({
+    schema: apiSchemaRef('ErrorResponse'),
     description: 'Location provider unavailable or rate limited.',
   })
-  @ApiGatewayTimeoutResponse({ description: 'Location provider timeout.' })
+  @ApiGatewayTimeoutResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Location provider timeout.',
+  })
   @UsePipes(
     new ZodValidationPipe(
       autocompleteLocationsQuerySchema,
@@ -98,16 +113,28 @@ export class LocationsController {
   @Get('search')
   @Version('1')
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @ApiQuery({ name: 'query', required: true, example: 'Plaça de Catalunya' })
+  @ApiZodQuery(searchLocationsQuerySchema, { query: 'Plaça de Catalunya' })
+  @ApiTooManyRequestsResponse({
+    description: 'Rate limited.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
   @ApiOkResponse({
+    schema: apiSchemaRef('SearchLocationsResponse'),
     description:
       'Complete location search. Search results contain coordinates directly.',
   })
-  @ApiBadRequestResponse({ description: 'Validation error.' })
+  @ApiBadRequestResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Validation error.',
+  })
   @ApiServiceUnavailableResponse({
+    schema: apiSchemaRef('ErrorResponse'),
     description: 'Location provider unavailable or rate limited.',
   })
-  @ApiGatewayTimeoutResponse({ description: 'Location provider timeout.' })
+  @ApiGatewayTimeoutResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Location provider timeout.',
+  })
   @UsePipes(
     new ZodValidationPipe(searchLocationsQuerySchema, 'INVALID_LOCATION_QUERY'),
   )
@@ -136,18 +163,35 @@ export class LocationsController {
   @Get('details')
   @Version('1')
   @Throttle({ default: { limit: 80, ttl: 60_000 } })
-  @ApiQuery({ name: 'placeId', required: true, example: 'provider-gid' })
-  @ApiQuery({ name: 'language', required: false, example: 'ca' })
+  @ApiZodQuery(locationDetailsQuerySchema, {
+    placeId: 'provider-gid',
+    language: 'ca',
+  })
+  @ApiTooManyRequestsResponse({
+    description: 'Rate limited.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
   @ApiOkResponse({
+    schema: apiSchemaRef('LocationDetailsResponse'),
     description:
       'Resolved place details. Routing endpoints continue accepting selected coordinates rather than text.',
   })
-  @ApiBadRequestResponse({ description: 'Validation error.' })
-  @ApiNotFoundResponse({ description: 'Location not found.' })
+  @ApiBadRequestResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Validation error.',
+  })
+  @ApiNotFoundResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Location not found.',
+  })
   @ApiServiceUnavailableResponse({
+    schema: apiSchemaRef('ErrorResponse'),
     description: 'Location provider unavailable or rate limited.',
   })
-  @ApiGatewayTimeoutResponse({ description: 'Location provider timeout.' })
+  @ApiGatewayTimeoutResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Location provider timeout.',
+  })
   @UsePipes(
     new ZodValidationPipe(locationDetailsQuerySchema, 'INVALID_LOCATION_QUERY'),
   )
@@ -163,17 +207,28 @@ export class LocationsController {
   @Get('reverse')
   @Version('1')
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @ApiQuery({ name: 'latitude', required: true, example: 41.387 })
-  @ApiQuery({ name: 'longitude', required: true, example: 2.17 })
+  @ApiZodQuery(reverseGeocodeQuerySchema, { latitude: 41.387, longitude: 2.17 })
+  @ApiTooManyRequestsResponse({
+    description: 'Rate limited.',
+    schema: apiSchemaRef('ErrorResponse'),
+  })
   @ApiOkResponse({
+    schema: apiSchemaRef('ReverseGeocodeResponse'),
     description:
       'Reverse geocoding results near coordinates. Results include attribution.',
   })
-  @ApiBadRequestResponse({ description: 'Validation error.' })
+  @ApiBadRequestResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Validation error.',
+  })
   @ApiServiceUnavailableResponse({
+    schema: apiSchemaRef('ErrorResponse'),
     description: 'Location provider unavailable or rate limited.',
   })
-  @ApiGatewayTimeoutResponse({ description: 'Location provider timeout.' })
+  @ApiGatewayTimeoutResponse({
+    schema: apiSchemaRef('ErrorResponse'),
+    description: 'Location provider timeout.',
+  })
   @UsePipes(
     new ZodValidationPipe(reverseGeocodeQuerySchema, 'INVALID_LOCATION_QUERY'),
   )

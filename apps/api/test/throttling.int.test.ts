@@ -24,6 +24,12 @@ describe('route cost throttling', () => {
 
     const response = await injectEstimate(app);
     expect(response.statusCode).toBe(429);
+    expect(response.json()).toEqual({
+      statusCode: 429,
+      code: 'RATE_LIMITED',
+      message: 'Too many requests. Try again later.',
+      fields: [],
+    });
   });
 });
 

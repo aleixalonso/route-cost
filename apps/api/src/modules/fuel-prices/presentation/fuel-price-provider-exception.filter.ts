@@ -7,17 +7,15 @@ import {
 import type { FastifyReply } from 'fastify';
 
 import {
+  type ApiErrorResponse,
+  apiErrorResponse,
+} from '../../../common/api-error';
+import {
   FuelPriceProviderInvalidResponseError,
   FuelPriceProviderTimeoutError,
   FuelPriceProviderUnavailableError,
   VehicleFuelProductUnsupportedError,
 } from '../application/fuel-price-errors';
-
-interface ErrorResponse {
-  readonly statusCode: number;
-  readonly code: string;
-  readonly message: string;
-}
 
 @Catch(
   VehicleFuelProductUnsupportedError,
@@ -34,34 +32,38 @@ export class FuelPriceProviderExceptionFilter implements ExceptionFilter {
   }
 }
 
-function mapFuelPriceError(exception: Error): ErrorResponse {
+function mapFuelPriceError(exception: Error): ApiErrorResponse {
   if (exception instanceof VehicleFuelProductUnsupportedError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       code: 'VEHICLE_FUEL_PRODUCT_UNSUPPORTED',
       message: 'The selected vehicle has no supported fuel price product.',
-    };
+      fields: [],
+    });
   }
 
   if (exception instanceof FuelPriceProviderTimeoutError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.GATEWAY_TIMEOUT,
       code: 'FUEL_PRICE_PROVIDER_TIMEOUT',
       message: 'The fuel price provider timed out.',
-    };
+      fields: [],
+    });
   }
 
   if (exception instanceof FuelPriceProviderInvalidResponseError) {
-    return {
+    return apiErrorResponse({
       statusCode: HttpStatus.BAD_GATEWAY,
       code: 'FUEL_PRICE_PROVIDER_INVALID_RESPONSE',
       message: 'The fuel price provider returned invalid data.',
-    };
+      fields: [],
+    });
   }
 
-  return {
+  return apiErrorResponse({
     statusCode: HttpStatus.SERVICE_UNAVAILABLE,
     code: 'FUEL_PRICE_PROVIDER_UNAVAILABLE',
     message: 'The fuel price provider is temporarily unavailable.',
-  };
+    fields: [],
+  });
 }
