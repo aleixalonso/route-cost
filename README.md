@@ -10,7 +10,7 @@ The default providers are `mock`, so the whole stack starts with no API keys at 
 
 ![RouteCost route estimate flow](docs/media/estimate-flow.png)
 
-End-to-end estimate flow against the built-in `mock` providers: pick two Barcelona locations, choose the catalog Honda Forza 350, set the fuel price and read the distance, litres, cost, road-category breakdown and route map.
+End-to-end estimate flow recorded against the Stadia basemap and Valhalla routing: pick two Barcelona locations, choose the catalog Honda Forza 350, set the fuel price and read the distance, litres, cost, road-category breakdown and route map. The repository still defaults to the built-in `mock` providers and starts with no API keys.
 
 ![Animated demo of the estimate flow](docs/media/estimate-flow.gif)
 
