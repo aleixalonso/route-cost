@@ -15,6 +15,7 @@ const environmentSchema = z
     CORS_ORIGINS: z.string().default('http://localhost:5173'),
     SWAGGER_ENABLED: environmentBooleanSchema.prefault('true'),
     TRUST_PROXY: environmentBooleanSchema.prefault('false'),
+    THROTTLING_ENABLED: environmentBooleanSchema.prefault('true'),
     ROUTING_PROVIDER: z.enum(['mock', 'valhalla']).default('mock'),
     VALHALLA_BASE_URL: z
       .string()

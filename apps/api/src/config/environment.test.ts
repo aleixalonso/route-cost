@@ -3,6 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { validateEnvironment } from './environment';
 
 describe('validateEnvironment', () => {
+  it('enables throttling by default and parses the string false', () => {
+    expect(validateEnvironment({}).THROTTLING_ENABLED).toBe(true);
+    expect(
+      validateEnvironment({ THROTTLING_ENABLED: 'false' }).THROTTLING_ENABLED,
+    ).toBe(false);
+  });
+
   it('parses disabled Swagger from the string false', () => {
     expect(
       validateEnvironment({ SWAGGER_ENABLED: 'false' }).SWAGGER_ENABLED,

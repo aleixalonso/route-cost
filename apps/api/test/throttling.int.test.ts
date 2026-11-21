@@ -51,6 +51,30 @@ describe('route cost throttling behind a trusted proxy', () => {
   });
 });
 
+describe('route cost throttling disabled for the browser harness', () => {
+  let app: NestFastifyApplication | undefined;
+
+  beforeAll(async () => {
+    vi.stubEnv('THROTTLING_ENABLED', 'false');
+    app = await createMockApp();
+  });
+
+  afterAll(async () => {
+    try {
+      await app?.close();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('allows more requests than the production limit', async () => {
+    for (let requestNumber = 0; requestNumber < 12; requestNumber += 1) {
+      const response = await injectEstimate(app);
+      expect(response.statusCode).toBe(200);
+    }
+  });
+});
+
 async function createMockApp(): Promise<NestFastifyApplication> {
   vi.stubEnv('ROUTING_PROVIDER', 'mock');
   vi.stubEnv('GEOCODING_PROVIDER', 'mock');
