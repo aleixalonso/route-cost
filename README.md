@@ -275,6 +275,7 @@ Routing endpoints continue accepting coordinates rather than free-form address t
 - `packages/contracts`: Zod HTTP contracts
 - `packages/fuel-prices`: provider-neutral fuel-price models, registry, distance, nearby selection, and suggestion logic
 - `packages/geocoding`: provider-neutral geocoding abstraction
+- `packages/mcp`: standalone stdio MCP server with three tools (`list_vehicles`, `suggest_fuel_price`, `estimate_route_cost`)
 - `packages/routing`: provider-neutral routing abstraction
 - `packages/vehicle-data`: static curated vehicle catalog with provenance metadata
 
@@ -364,3 +365,37 @@ pnpm geocoding:verify search \
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md) and [docs/decisions/0011-route-preferences-and-characteristics.md](docs/decisions/0011-route-preferences-and-characteristics.md). Turborepo remote cache can be added later with `TURBO_TOKEN` and `TURBO_TEAM`; CI does not require either variable.
+
+## Use it as an MCP server
+
+`list_vehicles` and `suggest_fuel_price` work with zero keys. `estimate_route_cost` refuses unless `ROUTING_PROVIDER=valhalla` with `VALHALLA_API_KEY` and `GEOCODING_PROVIDER=stadia` with `STADIA_API_KEY`: a fixture would be a plausible-looking lie, so the tool errors instead. The package is not published yet.
+
+Hermes:
+
+```yaml
+mcp_servers:
+  route-cost:
+    command: 'npx'
+    args: ['-y', 'route-cost-mcp']
+    env:
+      ROUTING_PROVIDER: 'valhalla'
+      VALHALLA_API_KEY: '${VALHALLA_API_KEY}'
+      GEOCODING_PROVIDER: 'stadia'
+      STADIA_API_KEY: '${STADIA_API_KEY}'
+      FUEL_PRICE_PROVIDER_MODE: 'live'
+```
+
+OpenClaw ([MCP CLI reference](https://docs.openclaw.ai/cli/mcp/registry)):
+
+```bash
+openclaw mcp add route-cost \
+  --command npx \
+  --arg -y \
+  --arg route-cost-mcp \
+  --env ROUTING_PROVIDER=valhalla \
+  --env VALHALLA_API_KEY="$VALHALLA_API_KEY" \
+  --env GEOCODING_PROVIDER=stadia \
+  --env STADIA_API_KEY="$STADIA_API_KEY" \
+  --env FUEL_PRICE_PROVIDER_MODE=live
+openclaw mcp doctor route-cost --probe
+```
