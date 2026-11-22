@@ -254,6 +254,65 @@ it('uses a caller price without fetching Ministry data', async () => {
   expect(urls).toHaveLength(4);
 });
 
+it('explains trace_attributes entitlement failure without a partial estimate', async () => {
+  const fetchImpl: typeof fetch = async (input) => {
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+    if (url.includes('geocoding'))
+      return Response.json({
+        type: 'FeatureCollection',
+        geocoding: { attribution: 'https://stadiamaps.com' },
+        features: [
+          {
+            type: 'Feature',
+            properties: { gid: 'x', layer: 'locality', name: 'Point' },
+            geometry: { type: 'Point', coordinates: [2.17, 41.387] },
+          },
+        ],
+      });
+    if (url.includes('trace_attributes'))
+      return Response.json(
+        {
+          error:
+            'Account does not have access to this endpoint. Please upgrade your account.',
+        },
+        { status: 403 },
+      );
+    return Response.json({
+      trip: { summary: { length: 1, time: 100 }, legs: [{ shape: 'encoded' }] },
+    });
+  };
+  const client = await connect(
+    {
+      ROUTING_PROVIDER: 'valhalla',
+      VALHALLA_API_KEY: 'test',
+      GEOCODING_PROVIDER: 'stadia',
+      STADIA_API_KEY: 'test',
+    },
+    fetchImpl,
+  );
+  const result = await client.callTool({
+    name: 'estimate_route_cost',
+    arguments: {
+      origin: 'A',
+      destination: 'B',
+      vehicleId: 'volkswagen-golf-1-5-tsi-2025',
+      fuelPrice: { amountPerLitre: 2 },
+    },
+  });
+  expect(result.isError).toBe(true);
+  expect(result.structuredContent).toBeUndefined();
+  const text = JSON.stringify(result.content);
+  expect(text).toContain('trace_attributes');
+  expect(text).toContain('Stadia Maps plan');
+  expect(text).not.toContain('Valhalla authentication failed');
+  expect(text).not.toContain('estimatedCost');
+});
+
 it('rejects an empty trace and never returns a zero-cost estimate', async () => {
   const fetchImpl: typeof fetch = async (input) => {
     const url =

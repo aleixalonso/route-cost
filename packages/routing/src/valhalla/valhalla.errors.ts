@@ -1,5 +1,6 @@
 import {
   RoutingProviderAuthenticationError,
+  RoutingProviderEndpointNotEntitledError,
   RoutingProviderInvalidResponseError,
   RoutingProviderRateLimitError,
   RoutingProviderRouteNotFoundError,
@@ -17,6 +18,16 @@ export class ValhallaAuthenticationError extends RoutingProviderAuthenticationEr
   public constructor(options: ValhallaErrorOptions = {}) {
     super('Valhalla authentication failed.', options);
     this.name = 'ValhallaAuthenticationError';
+  }
+}
+
+export class ValhallaEndpointNotEntitledError extends RoutingProviderEndpointNotEntitledError {
+  public constructor(options: ValhallaErrorOptions = {}) {
+    super(
+      'Valhalla endpoint not available on this account: the API key is valid, but the Stadia Maps plan does not include this endpoint.',
+      options,
+    );
+    this.name = 'ValhallaEndpointNotEntitledError';
   }
 }
 

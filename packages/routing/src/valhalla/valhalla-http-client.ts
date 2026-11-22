@@ -2,6 +2,7 @@ import type { ZodSchema } from 'zod';
 
 import {
   ValhallaAuthenticationError,
+  ValhallaEndpointNotEntitledError,
   ValhallaInvalidResponseError,
   ValhallaRateLimitError,
   ValhallaRouteNotFoundError,
@@ -84,12 +85,23 @@ export class ValhallaHttpClient {
     const providerRequestId = response.headers.get('x-request-id') ?? undefined;
 
     if (!response.ok) {
-      const providerErrorCode = await this.readProviderErrorCode(response);
+      const { providerErrorCode, providerErrorMessage } =
+        await this.readProviderError(response);
       const options = {
         status: response.status,
         providerRequestId,
         providerErrorCode,
       };
+
+      if (
+        response.status === 403 &&
+        providerErrorMessage !== undefined &&
+        /\b(?:does not have access to this endpoint|no access to (?:this )?endpoint|endpoint (?:is )?not (?:included|available|entitled)|plan does not include (?:this )?endpoint)\b/i.test(
+          providerErrorMessage,
+        )
+      ) {
+        throw new ValhallaEndpointNotEntitledError(options);
+      }
 
       if (response.status === 401 || response.status === 403) {
         throw new ValhallaAuthenticationError(options);
@@ -154,13 +166,18 @@ export class ValhallaHttpClient {
     }
   }
 
-  private async readProviderErrorCode(
-    response: Response,
-  ): Promise<string | undefined> {
+  private async readProviderError(response: Response): Promise<{
+    providerErrorCode: string | undefined;
+    providerErrorMessage: string | undefined;
+  }> {
+    const empty = {
+      providerErrorCode: undefined,
+      providerErrorMessage: undefined,
+    };
     const contentType = response.headers.get('content-type') ?? '';
 
     if (!contentType.includes('application/json')) {
-      return undefined;
+      return empty;
     }
 
     try {
@@ -168,13 +185,16 @@ export class ValhallaHttpClient {
       const parsed = valhallaErrorResponseSchema.safeParse(json);
 
       if (!parsed.success) {
-        return undefined;
+        return empty;
       }
 
       const code = parsed.data.error_code ?? parsed.data.status_code;
-      return sanitizeProviderErrorCode(code);
+      return {
+        providerErrorCode: sanitizeProviderErrorCode(code),
+        providerErrorMessage: parsed.data.error,
+      };
     } catch {
-      return undefined;
+      return empty;
     }
   }
 }
@@ -186,6 +206,7 @@ function isAbortError(error: unknown): boolean {
 function isValhallaError(error: unknown): boolean {
   return (
     error instanceof ValhallaAuthenticationError ||
+    error instanceof ValhallaEndpointNotEntitledError ||
     error instanceof ValhallaInvalidResponseError ||
     error instanceof ValhallaRateLimitError ||
     error instanceof ValhallaRouteNotFoundError ||

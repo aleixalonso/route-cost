@@ -15,6 +15,23 @@ export class RoutingProviderAuthenticationError extends Error {
   }
 }
 
+export class RoutingProviderEndpointNotEntitledError extends Error {
+  public readonly status: number | undefined;
+  public readonly providerRequestId: string | undefined;
+  public readonly providerErrorCode: string | undefined;
+
+  public constructor(
+    message = 'Routing provider endpoint is not included in this account plan.',
+    options: RoutingProviderErrorOptions = {},
+  ) {
+    super(message);
+    this.name = 'RoutingProviderEndpointNotEntitledError';
+    this.status = options.status;
+    this.providerRequestId = options.providerRequestId;
+    this.providerErrorCode = options.providerErrorCode;
+  }
+}
+
 export class RoutingProviderRateLimitError extends Error {
   public readonly status: number | undefined;
   public readonly providerRequestId: string | undefined;

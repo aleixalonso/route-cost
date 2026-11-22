@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import endpointNotEntitledFixture from '../../test/fixtures/valhalla/endpoint-not-entitled.json' with { type: 'json' };
+import forbiddenFixture from '../../test/fixtures/valhalla/forbidden.json' with { type: 'json' };
 import malformedResponseFixture from '../../test/fixtures/valhalla/malformed-response.json' with { type: 'json' };
 import noRouteFixture from '../../test/fixtures/valhalla/no-route.json' with { type: 'json' };
 import rateLimitFixture from '../../test/fixtures/valhalla/rate-limit.json' with { type: 'json' };
 import routePrimaryFixture from '../../test/fixtures/valhalla/route-primary.json' with { type: 'json' };
 import traceMotorwayFixture from '../../test/fixtures/valhalla/trace-motorway.json' with { type: 'json' };
+import unauthorizedFixture from '../../test/fixtures/valhalla/unauthorized.json' with { type: 'json' };
 import {
   ValhallaAuthenticationError,
+  ValhallaEndpointNotEntitledError,
   ValhallaInvalidResponseError,
   ValhallaRateLimitError,
   ValhallaRouteNotFoundError,
@@ -24,14 +28,47 @@ describe('ValhallaHttpClient', () => {
   });
 
   it.each([
-    [401, ValhallaAuthenticationError],
-    [403, ValhallaAuthenticationError],
-  ])('maps %s responses to authentication errors', async (status, error) => {
-    mockFetch(response({}, status));
+    { body: endpointNotEntitledFixture, phrasing: 'with an upgrade prompt' },
+    {
+      body: { error: 'Account does not have access to this endpoint.' },
+      phrasing: 'without an upgrade prompt',
+    },
+  ])(
+    'maps an endpoint access 403 $phrasing to entitlement error',
+    async ({ body }) => {
+      mockFetch(response(body, 403));
+
+      const error = await client()
+        .post('/trace_attributes/v1', {}, valhallaTraceAttributesResponseSchema)
+        .catch((reason: unknown) => reason);
+      expect(error).toBeInstanceOf(ValhallaEndpointNotEntitledError);
+      if (!(error instanceof Error)) throw new Error('Expected an error');
+      expect(error).toMatchObject({ status: 403 });
+      expect(error.message).toContain('API key is valid');
+      expect(error.message).not.toContain('authentication failed');
+    },
+  );
+
+  it.each([forbiddenFixture, { error: 'Access to this endpoint.' }])(
+    'maps a 403 with $error to an authentication error',
+    async (body) => {
+      mockFetch(response(body, 403));
+
+      await expect(
+        client().post('/route/v1', {}, valhallaRouteResponseSchema),
+      ).rejects.toMatchObject({
+        name: 'ValhallaAuthenticationError',
+        message: 'Valhalla authentication failed.',
+      });
+    },
+  );
+
+  it('maps 401 responses to authentication errors', async () => {
+    mockFetch(response(unauthorizedFixture, 401));
 
     await expect(
       client().post('/route/v1', {}, valhallaRouteResponseSchema),
-    ).rejects.toBeInstanceOf(error);
+    ).rejects.toBeInstanceOf(ValhallaAuthenticationError);
   });
 
   it('maps rate limit responses', async () => {

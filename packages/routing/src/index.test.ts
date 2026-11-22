@@ -9,6 +9,7 @@ import {
   classifyRouteSegment,
   resolveRoutingProfile,
   RoutingProviderAuthenticationError,
+  RoutingProviderEndpointNotEntitledError,
   RoutingProviderInvalidResponseError,
   RoutingProviderRateLimitError,
   RoutingProviderRouteNotFoundError,
@@ -203,6 +204,11 @@ describe('routing provider errors', () => {
       RoutingProviderAuthenticationError,
       'RoutingProviderAuthenticationError',
       'Routing provider authentication failed.',
+    ],
+    [
+      RoutingProviderEndpointNotEntitledError,
+      'RoutingProviderEndpointNotEntitledError',
+      'Routing provider endpoint is not included in this account plan.',
     ],
     [
       RoutingProviderRateLimitError,

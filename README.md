@@ -370,6 +370,8 @@ See [docs/architecture.md](docs/architecture.md) and [docs/decisions/0011-route-
 
 `list_vehicles` and `suggest_fuel_price` work with zero keys. `estimate_route_cost` refuses unless `ROUTING_PROVIDER=valhalla` with `VALHALLA_API_KEY` and `GEOCODING_PROVIDER=stadia` with `STADIA_GEOCODING_API_KEY`: a fixture would be a plausible-looking lie, so the tool errors instead. `STADIA_API_KEY` remains accepted as an alias for backward compatibility. The package is not published yet.
 
+A real estimate needs two Stadia Maps endpoints: `/route/v1` for routing and `/trace_attributes/v1` for the road-type breakdown. The latter may be gated by the account plan. Stadia Maps can return `{"error":"Account does not have access to this endpoint. Please upgrade your account."}`. In that case, `estimate_route_cost` fails with an error naming `trace_attributes` and never returns a partial estimate without the breakdown. Check the Stadia Maps documentation and the account plan to determine which plans include `trace_attributes`.
+
 Hermes:
 
 ```yaml

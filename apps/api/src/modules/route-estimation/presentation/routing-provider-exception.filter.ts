@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   RoutingProviderAuthenticationError,
+  RoutingProviderEndpointNotEntitledError,
   RoutingProviderInvalidResponseError,
   RoutingProviderRateLimitError,
   RoutingProviderRouteNotFoundError,
@@ -21,6 +22,7 @@ import {
 
 @Catch(
   RoutingProviderAuthenticationError,
+  RoutingProviderEndpointNotEntitledError,
   RoutingProviderInvalidResponseError,
   RoutingProviderRateLimitError,
   RoutingProviderRouteNotFoundError,
@@ -42,6 +44,16 @@ function mapRoutingProviderError(exception: Error): ApiErrorResponse {
       statusCode: HttpStatus.NOT_FOUND,
       code: 'ROUTE_NOT_FOUND',
       message: 'No route was found for the requested coordinates.',
+      fields: [],
+    });
+  }
+
+  if (exception instanceof RoutingProviderEndpointNotEntitledError) {
+    return apiErrorResponse({
+      statusCode: HttpStatus.BAD_GATEWAY,
+      code: 'ROUTING_PROVIDER_ENDPOINT_NOT_ENTITLED',
+      message:
+        'The routing service account cannot use the endpoint this estimate requires.',
       fields: [],
     });
   }

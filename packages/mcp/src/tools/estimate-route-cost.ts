@@ -2,7 +2,10 @@ import {
   calculateFuelCost,
   estimateRouteFuelConsumption,
 } from '@route-cost/domain';
-import { summarizeRouteDistances } from '@route-cost/routing';
+import {
+  RoutingProviderEndpointNotEntitledError,
+  summarizeRouteDistances,
+} from '@route-cost/routing';
 import { getVehicleById } from '@route-cost/vehicle-data';
 import { z } from 'zod';
 
@@ -257,6 +260,12 @@ export async function estimateRouteCostTool(
     const text = `${origin.label} to ${destination.label}: ${distanceKm.toFixed(2)} km, ${consumption.totalLitres.toFixed(2)} L at ${price.amountPerLitre.toFixed(2)} ${price.currency}/L (${fuelSource.label}${suggestion?.sourceUpdatedAt === undefined ? '' : `, ${suggestion.sourceUpdatedAt}`}), total ${cost.estimatedCost.toFixed(2)} ${price.currency}. ${split}. Toll road: ${hasToll ? 'yes' : 'no'}; ferry: ${hasFerry ? 'yes' : 'no'}.`;
     return { content: [{ type: 'text' as const, text }], structuredContent };
   } catch (error) {
+    if (error instanceof RoutingProviderEndpointNotEntitledError)
+      return toolError(
+        new Error(
+          'The road-type breakdown needs a Stadia Maps plan that includes the trace_attributes endpoint. The API key is valid, but this account cannot call trace_attributes, so route-cost cannot produce a real estimate. Check the Stadia Maps plan for this key and use a key whose plan includes trace_attributes, then retry.',
+        ),
+      );
     return toolError(error);
   }
 }
