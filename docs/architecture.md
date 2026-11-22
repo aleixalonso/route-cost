@@ -173,7 +173,7 @@ ROUTING_PROVIDER=mock
 
 ## Fuel Price Suggestions
 
-`@route-cost/fuel-prices` owns provider-neutral fuel products, station price models, country provider registry, haversine distance calculation, progressive nearby station selection, and median suggestion calculation. It has no NestJS, Fastify, React, environment, geocoding provider, or Spain source dependency.
+`@route-cost/fuel-prices` owns provider-neutral fuel products, station price models, country provider registry, haversine distance calculation, progressive nearby station selection, and median suggestion calculation. Its provider-neutral core has no NestJS, Fastify, React, environment, geocoding provider, or Spain source dependency.
 
 The API module resolves:
 
@@ -183,7 +183,7 @@ origin coordinate -> CountryResolver -> ISO country code -> registry -> provider
 
 Country resolution uses the existing reverse-geocoding provider abstraction. Clients do not send country codes. The central suggestion service depends on `COUNTRY_RESOLVER` and `COUNTRY_FUEL_PRICE_PROVIDER_REGISTRY`, so country-specific adapters are hidden behind provider interfaces.
 
-Spain is registered as `ES`. Its adapter owns official REST JSON retrieval, Spanish field names, comma-decimal parsing, WGS84 coordinate parsing, normalized station snapshots, and process-local cache behavior. Unsupported countries return structured `200 OK` availability responses so route-cost calculation can continue with manual price input.
+Spain is registered as `ES`. Its adapter in `packages/fuel-prices` owns official REST JSON retrieval, Spanish field names, comma-decimal parsing, WGS84 coordinate parsing, normalized station snapshots, and process-local cache behavior. The framework-agnostic factory is consumed by both `apps/api` and `packages/mcp`. Unsupported countries return structured `200 OK` availability responses so route-cost calculation can continue with manual price input.
 
 selects the deterministic mock provider and requires no network access.
 
@@ -192,7 +192,7 @@ ROUTING_PROVIDER=valhalla
 VALHALLA_API_KEY=<key>
 ```
 
-selects `ValhallaRoutingProvider`, which calls the Stadia Maps EU Valhalla API from API infrastructure only. Stadia authentication, URLs, response schemas, and HTTP errors stay under `apps/api/src/modules/route-estimation/infrastructure/valhalla`.
+selects the Valhalla routing provider, which calls the Stadia Maps EU Valhalla API. Its authentication, URLs, response schemas, and HTTP errors live in `packages/routing`. The framework-agnostic factory is consumed by both `apps/api` and `packages/mcp`.
 
 `POST /api/v1/routes` accepts provider-neutral coordinates, vehicle category, and alternatives. It returns normalized alternatives, encoded polylines, classified segments, and route distance summaries.
 
@@ -295,7 +295,7 @@ ROUTING_PROVIDER=valhalla VALHALLA_API_KEY=<key> pnpm routing:verify
 
 ## Location Search
 
-`@route-cost/geocoding` owns provider-neutral location models, request/result types, provider errors, and the `GeocodingProvider` port. It has no NestJS, Fastify, environment, React, MapLibre, or Stadia response dependencies.
+`@route-cost/geocoding` owns provider-neutral location models, request/result types, provider errors, and the `GeocodingProvider` port. Its provider-neutral core has no NestJS, Fastify, environment, React, MapLibre, or Stadia response dependencies.
 
 The API registers backend geocoding behind the `GEOCODING_PROVIDER` token:
 
@@ -326,6 +326,8 @@ STADIA_GEOCODING_API_KEY=<key>
 ```
 
 selects Stadia Maps Geocoding v2 over the EU endpoint. The API key is sent in the `Authorization` header and never returned to clients.
+
+The Stadia adapter lives in `packages/geocoding`. Its framework-agnostic factory is consumed by both `apps/api` and `packages/mcp`.
 
 The API exposes:
 

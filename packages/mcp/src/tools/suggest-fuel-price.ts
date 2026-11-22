@@ -1,8 +1,61 @@
+import {
+  calculateFuelPriceSuggestion,
+  type FuelProduct,
+  type GeographicCoordinate,
+  selectNearbyStations,
+} from '@route-cost/fuel-prices';
 import { z } from 'zod';
 
 import type { McpConfig } from '../config.js';
 import { toolError } from '../errors.js';
-import { suggestSpainFuelPrice } from '../infrastructure/spain-fuel-prices.js';
+import { createFuelPriceProvider } from '../providers.js';
+
+const attributionUrl =
+  'https://datos.gob.es/es/catalogo/e05068001-precio-de-carburantes-en-las-gasolineras-espanolas';
+
+export async function suggestSpainFuelPrice(
+  coordinate: GeographicCoordinate,
+  fuelProduct: FuelProduct,
+  config: McpConfig,
+  fetchImpl: typeof fetch,
+) {
+  if (config.FUEL_PRICE_PROVIDER_MODE === 'mock')
+    throw new Error(
+      'This server ships no mock fuel data; FUEL_PRICE_PROVIDER_MODE must be live.',
+    );
+  const result = await createFuelPriceProvider(
+    config,
+    fetchImpl,
+  ).getNearbyFuelPrices({
+    coordinate,
+    fuelProduct,
+  });
+  const selected = selectNearbyStations(result, coordinate, fuelProduct, {
+    radiusStepsMetres: [5000, 10000, 25000],
+    minStationCount: 5,
+    maxStationCount: 30,
+    maxDataAgeHours: 72,
+  });
+  if (selected.stations.length === 0)
+    throw new Error(`No station within 25 km has ${fuelProduct}.`);
+  const suggestion = calculateFuelPriceSuggestion({ result, selected });
+  return {
+    fuelProduct,
+    pricePerLitre: suggestion.suggestedPricePerLitre.amount,
+    currency: suggestion.suggestedPricePerLitre.currency,
+    stationCount: suggestion.stationCount,
+    radiusMetres: suggestion.radiusMetres,
+    sourceUrl: config.SPAIN_FUEL_PRICE_SOURCE_URL,
+    ...(result.sourceUpdatedAt === undefined
+      ? {}
+      : { sourceUpdatedAt: result.sourceUpdatedAt }),
+    retrievedAt: result.retrievedAt,
+    isStale:
+      result.sourceUpdatedAt === undefined ||
+      Date.now() - Date.parse(result.sourceUpdatedAt) > 72 * 60 * 60 * 1000,
+    attributionUrl: result.attribution?.url ?? attributionUrl,
+  };
+}
 
 export const suggestFuelPriceInput = {
   latitude: z.number().min(-90).max(90),

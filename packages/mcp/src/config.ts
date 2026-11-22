@@ -10,6 +10,13 @@ export const configSchema = z.object({
   STADIA_API_KEY: z.string().default(''),
   STADIA_GEOCODING_BASE_URL: z.url().default('https://api-eu.stadiamaps.com'),
   STADIA_GEOCODING_SEARCH_PATH: z.string().default('/geocoding/v2/search'),
+  STADIA_GEOCODING_AUTOCOMPLETE_PATH: z
+    .string()
+    .default('/geocoding/v2/autocomplete'),
+  STADIA_GEOCODING_PLACE_DETAILS_PATH: z
+    .string()
+    .default('/geocoding/v2/place_details'),
+  STADIA_GEOCODING_REVERSE_PATH: z.string().default('/geocoding/v2/reverse'),
   FUEL_PRICE_PROVIDER_MODE: z.enum(['live', 'mock']).default('live'),
   SPAIN_FUEL_PRICE_SOURCE_URL: z
     .url()

@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 
 import { parseConfig } from '../src/config.js';
 import { connect } from './client.js';
@@ -46,6 +46,29 @@ it('returns a median from the injected Spanish data source', async () => {
     stationCount: 2,
   });
   expect(calls).toBe(1);
+});
+
+it.each([
+  ['18/11/2026 11:59:59', true],
+  ['18/11/2026 12:00:00', false],
+  [undefined, true],
+])('reports source date %s as stale: %s', async (Fecha, isStale) => {
+  const now = vi
+    .spyOn(Date, 'now')
+    .mockReturnValue(Date.parse('2026-11-21T11:00:00.000Z'));
+  try {
+    const client = await connect({}, async () =>
+      Response.json({ ...ministryPayload, Fecha }),
+    );
+    const result = await client.callTool({
+      name: 'suggest_fuel_price',
+      arguments: { latitude: 41.387, longitude: 2.17 },
+    });
+    expect(result.isError).not.toBe(true);
+    expect(result.structuredContent).toMatchObject({ isStale });
+  } finally {
+    now.mockRestore();
+  }
 });
 
 it('suggests a fuel price without routing or geocoding keys', async () => {

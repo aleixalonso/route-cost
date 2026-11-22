@@ -2,18 +2,17 @@ import {
   calculateFuelCost,
   estimateRouteFuelConsumption,
 } from '@route-cost/domain';
-import {
-  resolveRoutingProfile,
-  summarizeRouteDistances,
-} from '@route-cost/routing';
+import { summarizeRouteDistances } from '@route-cost/routing';
 import { getVehicleById } from '@route-cost/vehicle-data';
 import { z } from 'zod';
 
 import type { McpConfig } from '../config.js';
 import { toolError } from '../errors.js';
-import { suggestSpainFuelPrice } from '../infrastructure/spain-fuel-prices.js';
-import { geocode } from '../infrastructure/stadia-geocoding.js';
-import { route } from '../infrastructure/valhalla-routing.js';
+import {
+  createGeocodingProvider,
+  createRoutingProvider,
+} from '../providers.js';
+import { suggestSpainFuelPrice } from './suggest-fuel-price.js';
 
 export const estimateRouteCostInput = {
   origin: z.string().min(1),
@@ -99,16 +98,61 @@ export async function estimateRouteCostTool(
       throw new Error(
         `Unknown vehicleId: ${args.vehicleId}. Call list_vehicles for the valid ids.`,
       );
-    const origin = await geocode(args.origin, config, fetchImpl);
-    const destination = await geocode(args.destination, config, fetchImpl);
-    const routed = await route(
-      origin,
-      destination,
-      resolveRoutingProfile(vehicle.vehicleCategory),
+    const geocoding = createGeocodingProvider(config, fetchImpl);
+    const originItem = (
+      await geocoding.searchLocations({
+        query: args.origin,
+        limit: 1,
+        language: 'es',
+      })
+    ).items[0];
+    if (originItem === undefined)
+      throw new Error(`Stadia geocoding could not resolve "${args.origin}".`);
+    const destinationItem = (
+      await geocoding.searchLocations({
+        query: args.destination,
+        limit: 1,
+        language: 'es',
+      })
+    ).items[0];
+    if (destinationItem === undefined)
+      throw new Error(
+        `Stadia geocoding could not resolve "${args.destination}".`,
+      );
+    const origin = {
+      label: originItem.label,
+      latitude: originItem.coordinate.latitude,
+      longitude: originItem.coordinate.longitude,
+    };
+    const destination = {
+      label: destinationItem.label,
+      latitude: destinationItem.coordinate.latitude,
+      longitude: destinationItem.coordinate.longitude,
+    };
+    const routed = await createRoutingProvider(
       config,
       fetchImpl,
+    ).calculateRoutes({
+      origin: originItem.coordinate,
+      destination: destinationItem.coordinate,
+      vehicleCategory: vehicle.vehicleCategory,
+      alternatives: 0,
+    });
+    const alternative = routed.alternatives[0];
+    if (alternative === undefined)
+      throw new Error('Valhalla returned no route alternatives.');
+    const distanceKm =
+      alternative.segments.reduce(
+        (total, segment) => total + segment.distanceMetres,
+        0,
+      ) / 1000;
+    const hasToll = alternative.segments.some(
+      (segment) => segment.isToll === true,
     );
-    const distances = summarizeRouteDistances(routed.segments);
+    const hasFerry = alternative.segments.some(
+      (segment) => segment.isFerry === true,
+    );
+    const distances = summarizeRouteDistances(alternative.segments);
     const consumption = estimateRouteFuelConsumption(
       distances,
       vehicle.consumptionProfile,
@@ -161,7 +205,7 @@ export async function estimateRouteCostTool(
             retrievedAt: suggestion.retrievedAt,
           };
     const structuredContent = {
-      distanceKm: routed.distanceKm,
+      distanceKm,
       litres: consumption.totalLitres,
       costPerLitre: price.amountPerLitre,
       currency: price.currency,
@@ -200,7 +244,7 @@ export async function estimateRouteCostTool(
           `${name}: ${item.distanceKm.toFixed(2)} km, ${item.litres.toFixed(2)} L`,
       )
       .join('; ');
-    const text = `${origin.label} to ${destination.label}: ${routed.distanceKm.toFixed(2)} km, ${consumption.totalLitres.toFixed(2)} L at ${price.amountPerLitre.toFixed(2)} ${price.currency}/L (${fuelSource.label}${suggestion?.sourceUpdatedAt === undefined ? '' : `, ${suggestion.sourceUpdatedAt}`}), total ${cost.estimatedCost.toFixed(2)} ${price.currency}. ${split}. Toll road: ${routed.hasToll ? 'yes' : 'no'}; ferry: ${routed.hasFerry ? 'yes' : 'no'}.`;
+    const text = `${origin.label} to ${destination.label}: ${distanceKm.toFixed(2)} km, ${consumption.totalLitres.toFixed(2)} L at ${price.amountPerLitre.toFixed(2)} ${price.currency}/L (${fuelSource.label}${suggestion?.sourceUpdatedAt === undefined ? '' : `, ${suggestion.sourceUpdatedAt}`}), total ${cost.estimatedCost.toFixed(2)} ${price.currency}. ${split}. Toll road: ${hasToll ? 'yes' : 'no'}; ferry: ${hasFerry ? 'yes' : 'no'}.`;
     return { content: [{ type: 'text' as const, text }], structuredContent };
   } catch (error) {
     return toolError(error);
