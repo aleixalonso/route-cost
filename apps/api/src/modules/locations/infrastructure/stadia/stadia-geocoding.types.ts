@@ -1,34 +1,8 @@
-import type { z } from 'zod';
+import type { StadiaGeocodingConfig } from '@route-cost/geocoding';
 
 import type { Environment } from '../../../../config/environment';
-import type {
-  stadiaAutocompleteResponseSchema,
-  stadiaErrorResponseSchema,
-  stadiaFullLocationResponseSchema,
-} from './stadia-geocoding.schema';
 
 export const STADIA_GEOCODING_CONFIG = Symbol('STADIA_GEOCODING_CONFIG');
-
-export interface StadiaGeocodingConfig {
-  baseUrl: string;
-  autocompletePath: string;
-  searchPath: string;
-  placeDetailsPath: string;
-  reversePath: string;
-  apiKey: string;
-  clientId: string;
-  requestTimeoutMs: number;
-  defaultLimit: number;
-  maxLimit: number;
-}
-
-export type StadiaAutocompleteResponse = z.infer<
-  typeof stadiaAutocompleteResponseSchema
->;
-export type StadiaFullLocationResponse = z.infer<
-  typeof stadiaFullLocationResponseSchema
->;
-export type StadiaErrorResponse = z.infer<typeof stadiaErrorResponseSchema>;
 
 type StadiaGeocodingEnvironment = Pick<
   Environment,

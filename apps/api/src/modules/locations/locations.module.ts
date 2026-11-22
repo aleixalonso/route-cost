@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import {
+  createStadiaGeocodingProvider,
+  type StadiaGeocodingConfig,
+} from '@route-cost/geocoding';
 
 import type { Environment } from '../../config/environment';
 import { EnvironmentModule } from '../../config/environment.module';
@@ -14,8 +18,6 @@ import { GEOCODING_PROVIDER } from './geocoding-provider.token';
 import { MockGeocodingProvider } from './infrastructure/mock/mock-geocoding.provider';
 import {
   STADIA_GEOCODING_CONFIG,
-  StadiaGeocodingHttpClient,
-  StadiaGeocodingProvider,
   toStadiaGeocodingConfig,
 } from './infrastructure/stadia';
 import { LocationsController } from './presentation/locations.controller';
@@ -29,8 +31,6 @@ import { LocationsController } from './presentation/locations.controller';
     GetLocationDetailsService,
     ReverseGeocodeService,
     MockGeocodingProvider,
-    StadiaGeocodingHttpClient,
-    StadiaGeocodingProvider,
     {
       provide: STADIA_GEOCODING_CONFIG,
       inject: [ENVIRONMENT],
@@ -47,14 +47,14 @@ import { LocationsController } from './presentation/locations.controller';
     },
     {
       provide: GEOCODING_PROVIDER,
-      inject: [ENVIRONMENT, MockGeocodingProvider, StadiaGeocodingProvider],
+      inject: [ENVIRONMENT, STADIA_GEOCODING_CONFIG, MockGeocodingProvider],
       useFactory: (
         environment: Environment,
+        config: StadiaGeocodingConfig,
         mockGeocodingProvider: MockGeocodingProvider,
-        stadiaGeocodingProvider: StadiaGeocodingProvider,
       ) =>
         environment.GEOCODING_PROVIDER === 'stadia'
-          ? stadiaGeocodingProvider
+          ? createStadiaGeocodingProvider(config)
           : mockGeocodingProvider,
     },
   ],

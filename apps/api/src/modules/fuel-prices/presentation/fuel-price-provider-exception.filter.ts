@@ -4,18 +4,18 @@ import {
   ExceptionFilter,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  FuelPriceProviderInvalidResponseError,
+  FuelPriceProviderTimeoutError,
+  FuelPriceProviderUnavailableError,
+} from '@route-cost/fuel-prices';
 import type { FastifyReply } from 'fastify';
 
 import {
   type ApiErrorResponse,
   apiErrorResponse,
 } from '../../../common/api-error';
-import {
-  FuelPriceProviderInvalidResponseError,
-  FuelPriceProviderTimeoutError,
-  FuelPriceProviderUnavailableError,
-  VehicleFuelProductUnsupportedError,
-} from '../application/fuel-price-errors';
+import { VehicleFuelProductUnsupportedError } from '../application/fuel-price-errors';
 
 @Catch(
   VehicleFuelProductUnsupportedError,

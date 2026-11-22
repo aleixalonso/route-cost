@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "geocoding": {
+    "attribution": { "url": "https://stadiamaps.com/attribution/" }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "gid": "stadia:poi:placa-catalunya",
+        "layer": "poi",
+        "name": "Plaça de Catalunya",
+        "coarse_location": "Barcelona, Catalunya, España",
+        "precision": "point"
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "gid": "stadia:unknown:layer",
+        "layer": "venue",
+        "name": "Unknown Layer Example",
+        "precision": "centroid"
+      }
+    }
+  ]
+}

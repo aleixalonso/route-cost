@@ -1,3 +1,5 @@
+import type { RoutingProfile, VehicleRoutingCategory } from './index.js';
+
 export type RoutePriority = 'fastest' | 'shortest';
 
 export interface RoutePreferences {
@@ -39,4 +41,22 @@ export function normalizeRoutePreferences(
       preferences?.avoidFerries ?? DEFAULT_ROUTE_PREFERENCES.avoidFerries,
     priority: preferences?.priority ?? DEFAULT_ROUTE_PREFERENCES.priority,
   };
+}
+
+export function resolveRoutingProfile(
+  vehicleCategory: VehicleRoutingCategory,
+): RoutingProfile {
+  switch (vehicleCategory) {
+    case 'car':
+      return 'auto';
+    case 'motorcycle':
+    case 'maxi-scooter':
+      return 'motorcycle';
+    case 'low-speed-scooter':
+      return 'motor_scooter';
+    default: {
+      const exhaustive: never = vehicleCategory;
+      return exhaustive;
+    }
+  }
 }

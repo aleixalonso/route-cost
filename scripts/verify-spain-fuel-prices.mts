@@ -4,22 +4,18 @@ import {
   fuelProducts,
   selectNearbyStations,
 } from '@route-cost/fuel-prices';
-
-import { SpainFuelPriceProvider } from '../apps/api/src/modules/fuel-prices/infrastructure/countries/spain/spain-fuel-price.provider';
-import { SpainFuelPriceHttpClient } from '../apps/api/src/modules/fuel-prices/infrastructure/countries/spain/spain-fuel-price-http.client';
+import { createSpainFuelPriceProvider } from '@route-cost/fuel-prices';
 
 const args = parseArgs(process.argv.slice(2));
 
 async function main(): Promise<void> {
-  const httpClient = new SpainFuelPriceHttpClient({
+  const provider = createSpainFuelPriceProvider({
     sourceUrl:
       process.env.SPAIN_FUEL_PRICE_SOURCE_URL ??
       'https://energia.serviciosmin.gob.es/ServiciosRestCarburantes/PreciosCarburantes/EstacionesTerrestres/',
-    timeoutMs: Number(
+    requestTimeoutMs: Number(
       process.env.SPAIN_FUEL_PRICES_REQUEST_TIMEOUT_MS ?? 10_000,
     ),
-  });
-  const provider = new SpainFuelPriceProvider(httpClient, {
     cacheTtlMs: Number(process.env.SPAIN_FUEL_PRICES_CACHE_TTL_MS ?? 1_800_000),
     staleIfErrorMs: Number(
       process.env.SPAIN_FUEL_PRICES_STALE_IF_ERROR_MS ?? 21_600_000,
@@ -60,7 +56,6 @@ async function main(): Promise<void> {
 
   const suggestion = calculateFuelPriceSuggestion({
     result,
-    fuelProduct: args.fuelProduct,
     selected,
   });
 
@@ -114,7 +109,9 @@ function parseCoordinate(value: string): {
   const [latitude, longitude] = value.split(',').map(Number);
 
   if (
+    latitude === undefined ||
     !Number.isFinite(latitude) ||
+    longitude === undefined ||
     !Number.isFinite(longitude) ||
     latitude < -90 ||
     latitude > 90 ||

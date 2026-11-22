@@ -1,4 +1,8 @@
-import type { RouteSegment } from './index.js';
+import type {
+  RouteSegment,
+  SegmentClassification,
+  SegmentClassificationInput,
+} from './index.js';
 
 export type RouteFeatureDetection =
   | {
@@ -79,5 +83,50 @@ function aggregateFeature(
     present,
     distanceMetres,
     segmentCount,
+  };
+}
+
+export function classifyRouteSegment(
+  attributes: SegmentClassificationInput,
+): SegmentClassification {
+  if (attributes.roadClass === 'motorway' || attributes.roadClass === 'trunk') {
+    return {
+      roadCategory: 'motorway',
+      classificationReason: 'road-class-motorway',
+    };
+  }
+
+  if (attributes.density !== undefined && attributes.density > 8) {
+    return {
+      roadCategory: 'urban',
+      classificationReason: 'urban-density',
+    };
+  }
+
+  if (
+    attributes.roadClass === 'residential' ||
+    attributes.roadClass === 'service_other'
+  ) {
+    return {
+      roadCategory: 'urban',
+      classificationReason: 'urban-road-class',
+    };
+  }
+
+  if (
+    attributes.roadClass === 'primary' ||
+    attributes.roadClass === 'secondary' ||
+    attributes.roadClass === 'tertiary' ||
+    attributes.roadClass === 'unclassified'
+  ) {
+    return {
+      roadCategory: 'interurban',
+      classificationReason: 'interurban-road-class',
+    };
+  }
+
+  return {
+    roadCategory: 'unknown',
+    classificationReason: 'insufficient-data',
   };
 }
