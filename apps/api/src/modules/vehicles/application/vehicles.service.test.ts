@@ -1,4 +1,7 @@
-import type { VehicleCatalogEntry } from '@route-cost/vehicle-data';
+import {
+  filterVehicles,
+  type VehicleCatalogEntry,
+} from '@route-cost/vehicle-data';
 import { describe, expect, it } from 'vitest';
 
 import type { VehicleCatalog } from '../vehicle-catalog.port';
@@ -15,6 +18,46 @@ describe('vehicle services', () => {
     expect(service.list({ vehicleCategory: 'car' }).items).toHaveLength(1);
   });
 
+  it('omits absent optional fields from summaries and includes supplied ones', () => {
+    const result = new ListVehiclesService(
+      catalog([vehicle(), vehicle(true)]),
+    ).list({});
+
+    expect(result.total).toBe(2);
+    expect(result.items[0]).not.toHaveProperty('yearTo');
+    expect(result.items[0]).not.toHaveProperty('engineDisplacementCc');
+    expect(result.items[0]?.consumptionData).not.toHaveProperty(
+      'officialCombinedLitresPer100Km',
+    );
+    expect(result.items[1]).toMatchObject({
+      yearTo: 2026,
+      engineDisplacementCc: 330,
+      consumptionData: { officialCombinedLitresPer100Km: 3.4 },
+    });
+  });
+
+  it('forwards combined catalog filters and returns only matching summaries', () => {
+    const service = new ListVehiclesService(catalog());
+
+    expect(
+      service
+        .list({
+          search: 'Forza',
+          manufacturer: 'Honda',
+          fuelType: 'petrol',
+          powertrainType: 'internal-combustion',
+        })
+        .items.map((item) => item.id),
+    ).toEqual(['honda-forza-350-2025']);
+    expect(
+      service.list({
+        search: 'Forza',
+        fuelType: 'diesel',
+        powertrainType: 'internal-combustion',
+      }),
+    ).toEqual({ items: [], total: 0 });
+  });
+
   it('retrieves a known vehicle with source records', () => {
     const vehicle = new GetVehicleService(catalog()).get(
       'honda-forza-350-2025',
@@ -23,6 +66,29 @@ describe('vehicle services', () => {
     expect(vehicle.displayName).toBe('Honda Forza 350');
     expect(vehicle.consumptionData.sources[0]).toMatchObject({
       publisher: 'Honda',
+    });
+  });
+
+  it('omits absent optional detail fields and includes supplied ones', () => {
+    const service = new GetVehicleService(
+      catalog([vehicle(), { ...vehicle(true), id: 'complete' }]),
+    );
+    const sparse = service.get('honda-forza-350-2025');
+    const complete = service.get('complete');
+
+    expect(sparse).not.toHaveProperty('yearTo');
+    expect(sparse).not.toHaveProperty('engineDisplacementCc');
+    expect(sparse.consumptionData).not.toHaveProperty(
+      'officialCombinedLitresPer100Km',
+    );
+    expect(sparse.consumptionData.sources[0]).not.toHaveProperty('notes');
+    expect(complete).toMatchObject({
+      yearTo: 2026,
+      engineDisplacementCc: 330,
+      consumptionData: {
+        officialCombinedLitresPer100Km: 3.4,
+        sources: [{ notes: 'Manufacturer specification.' }],
+      },
     });
   });
 
@@ -90,19 +156,22 @@ describe('ResolveVehicleSelectionService', () => {
   });
 });
 
-function catalog(): VehicleCatalog {
-  const vehicles = [
+function catalog(
+  vehicles: readonly VehicleCatalogEntry[] = [
     vehicle(),
-    { ...vehicle(), id: 'toyota', vehicleCategory: 'car' },
-  ] as const;
-
+    {
+      ...vehicle(),
+      id: 'toyota',
+      manufacturer: 'Toyota',
+      model: 'Prius',
+      displayName: 'Toyota Prius',
+      vehicleCategory: 'car',
+    },
+  ],
+): VehicleCatalog {
   return {
     list(filters = {}) {
-      return vehicles.filter(
-        (candidate) =>
-          filters.vehicleCategory === undefined ||
-          candidate.vehicleCategory === filters.vehicleCategory,
-      );
+      return filterVehicles(vehicles, filters);
     },
     getById(vehicleId: string) {
       return vehicles.find((candidate) => candidate.id === vehicleId);
@@ -110,7 +179,7 @@ function catalog(): VehicleCatalog {
   };
 }
 
-function vehicle(): VehicleCatalogEntry {
+function vehicle(includeOptional = false): VehicleCatalogEntry {
   return {
     id: 'honda-forza-350-2025',
     manufacturer: 'Honda',
@@ -118,10 +187,11 @@ function vehicle(): VehicleCatalogEntry {
     variant: 'Standard',
     displayName: 'Honda Forza 350',
     yearFrom: 2025,
+    ...(includeOptional ? { yearTo: 2026 } : {}),
     vehicleCategory: 'maxi-scooter',
     fuelType: 'petrol',
     powertrainType: 'internal-combustion',
-    engineDisplacementCc: 330,
+    ...(includeOptional ? { engineDisplacementCc: 330 } : {}),
     consumptionProfile: {
       urbanLitresPer100Km: 3.7,
       interurbanLitresPer100Km: 3.1,
@@ -131,7 +201,7 @@ function vehicle(): VehicleCatalogEntry {
     consumptionData: {
       status: 'estimated',
       confidence: 'medium',
-      officialCombinedLitresPer100Km: 3.4,
+      ...(includeOptional ? { officialCombinedLitresPer100Km: 3.4 } : {}),
       methodology: 'Estimated.',
       sources: [
         {
@@ -140,6 +210,7 @@ function vehicle(): VehicleCatalogEntry {
           publisher: 'Honda',
           url: 'https://example.com',
           accessedAt: '2026-07-26',
+          ...(includeOptional ? { notes: 'Manufacturer specification.' } : {}),
         },
       ],
     },

@@ -1,5 +1,5 @@
 import type { RoutingProvider } from '@route-cost/routing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { EstimateRouteService } from './estimate-route.service';
 
@@ -49,6 +49,22 @@ describe('EstimateRouteService', () => {
         motorwayDistanceMetres: 0,
         unknownDistanceMetres: 0,
       },
+    });
+  });
+
+  it('omits the alternatives preference when the request leaves it out', async () => {
+    const calculateRoutes = vi.fn(async () => ({ alternatives: [] }));
+    const service = new EstimateRouteService({ calculateRoutes });
+    const origin = { latitude: 41.38, longitude: 2.17 };
+    const destination = { latitude: 41.4, longitude: 2.19 };
+
+    await expect(
+      service.estimate({ origin, destination, vehicleCategory: 'car' }),
+    ).resolves.toEqual({ alternatives: [] });
+    expect(calculateRoutes).toHaveBeenCalledWith({
+      origin,
+      destination,
+      vehicleCategory: 'car',
     });
   });
 });

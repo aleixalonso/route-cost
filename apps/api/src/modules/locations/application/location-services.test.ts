@@ -98,6 +98,22 @@ describe('location application services', () => {
     });
   });
 
+  it('normalizes the country and caps an explicit search limit', async () => {
+    const { provider, mocks } = createProvider();
+    const service = new SearchLocationsService(provider, {
+      defaultLimit: 5,
+      maxLimit: 10,
+    });
+
+    await service.search({ query: 'Barcelona', countryCode: 'es', limit: 20 });
+
+    expect(mocks.searchLocations).toHaveBeenCalledWith({
+      query: 'Barcelona',
+      countryCode: 'ES',
+      limit: 10,
+    });
+  });
+
   it('calls details and reverse providers once', async () => {
     const { provider, mocks } = createProvider();
     const details = new GetLocationDetailsService(provider);
@@ -120,6 +136,22 @@ describe('location application services', () => {
       coordinate: { latitude: 41.387, longitude: 2.17 },
       limit: 5,
       countryCode: 'ES',
+    });
+  });
+
+  it('uses the default reverse limit when no country is supplied', async () => {
+    const { provider, mocks } = createProvider();
+    const service = new ReverseGeocodeService(provider, {
+      defaultLimit: 5,
+      maxLimit: 10,
+    });
+    const coordinate = { latitude: 41.387, longitude: 2.17 };
+
+    await service.reverse({ coordinate });
+
+    expect(mocks.reverseGeocode).toHaveBeenCalledWith({
+      coordinate,
+      limit: 5,
     });
   });
 });
