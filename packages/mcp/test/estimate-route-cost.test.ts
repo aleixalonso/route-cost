@@ -3,14 +3,7 @@ import { expect, it } from 'vitest';
 import { parseConfig } from '../src/config.js';
 import { connect } from './client.js';
 
-it.each([
-  {},
-  {
-    ROUTING_PROVIDER: 'valhalla',
-    VALHALLA_API_KEY: 'test',
-    GEOCODING_PROVIDER: 'stadia',
-  },
-])('refuses missing live credentials without estimate data', async (env) => {
+async function refusalContent(env: Record<string, string>): Promise<string> {
   const client = await connect(env);
   const result = await client.callTool({
     name: 'estimate_route_cost',
@@ -23,9 +16,55 @@ it.each([
   expect(result.isError).toBe(true);
   expect(result.structuredContent).toBeUndefined();
   const text = JSON.stringify(result.content);
-  expect(text).toContain('VALHALLA_API_KEY');
-  expect(text).toContain('STADIA_API_KEY');
   expect(text).not.toMatch(/distanceKm|litres|estimatedCost/);
+  expect(text).not.toMatch(/[0-9]+(\.[0-9]+)?\s*(km|L)\b/);
+  return text;
+}
+
+it('refuses when both live keys are missing', async () => {
+  const text = await refusalContent({
+    ROUTING_PROVIDER: 'valhalla',
+    GEOCODING_PROVIDER: 'stadia',
+  });
+  expect(text).toContain('VALHALLA_API_KEY is missing or empty');
+  expect(text).toContain('STADIA_GEOCODING_API_KEY is missing or empty');
+  expect(text).not.toContain('instead of "valhalla"');
+  expect(text).not.toContain('instead of "stadia"');
+});
+
+it('refuses when only the routing key is missing', async () => {
+  const text = await refusalContent({
+    ROUTING_PROVIDER: 'valhalla',
+    GEOCODING_PROVIDER: 'stadia',
+    STADIA_GEOCODING_API_KEY: 'test',
+  });
+  expect(text).toContain('VALHALLA_API_KEY is missing or empty');
+  expect(text).not.toContain('STADIA_GEOCODING_API_KEY is missing or empty');
+  expect(text).not.toContain('instead of');
+});
+
+it('refuses when only the geocoding key is missing', async () => {
+  const text = await refusalContent({
+    ROUTING_PROVIDER: 'valhalla',
+    VALHALLA_API_KEY: 'test',
+    GEOCODING_PROVIDER: 'stadia',
+  });
+  expect(text).toContain('STADIA_GEOCODING_API_KEY is missing or empty');
+  expect(text).not.toContain('VALHALLA_API_KEY is missing or empty');
+});
+
+it('refuses when both providers are mock despite valid keys', async () => {
+  const text = await refusalContent({
+    VALHALLA_API_KEY: 'test',
+    STADIA_GEOCODING_API_KEY: 'test',
+  });
+  expect(text).toContain(
+    'ROUTING_PROVIDER is \\"mock\\" instead of \\"valhalla\\"',
+  );
+  expect(text).toContain(
+    'GEOCODING_PROVIDER is \\"mock\\" instead of \\"stadia\\"',
+  );
+  expect(text).not.toContain('is missing or empty');
 });
 
 it.each([6, 6.004])(

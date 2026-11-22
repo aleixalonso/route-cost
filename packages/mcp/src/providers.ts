@@ -30,7 +30,7 @@ export function createGeocodingProvider(
     autocompletePath: config.STADIA_GEOCODING_AUTOCOMPLETE_PATH,
     placeDetailsPath: config.STADIA_GEOCODING_PLACE_DETAILS_PATH,
     reversePath: config.STADIA_GEOCODING_REVERSE_PATH,
-    apiKey: config.STADIA_API_KEY,
+    apiKey: config.STADIA_GEOCODING_API_KEY,
     clientId: 'route-cost',
     requestTimeoutMs: 5_000,
     defaultLimit: 1,

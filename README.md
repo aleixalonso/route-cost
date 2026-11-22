@@ -368,7 +368,7 @@ See [docs/architecture.md](docs/architecture.md) and [docs/decisions/0011-route-
 
 ## Use it as an MCP server
 
-`list_vehicles` and `suggest_fuel_price` work with zero keys. `estimate_route_cost` refuses unless `ROUTING_PROVIDER=valhalla` with `VALHALLA_API_KEY` and `GEOCODING_PROVIDER=stadia` with `STADIA_API_KEY`: a fixture would be a plausible-looking lie, so the tool errors instead. The package is not published yet.
+`list_vehicles` and `suggest_fuel_price` work with zero keys. `estimate_route_cost` refuses unless `ROUTING_PROVIDER=valhalla` with `VALHALLA_API_KEY` and `GEOCODING_PROVIDER=stadia` with `STADIA_GEOCODING_API_KEY`: a fixture would be a plausible-looking lie, so the tool errors instead. `STADIA_API_KEY` remains accepted as an alias for backward compatibility. The package is not published yet.
 
 Hermes:
 
@@ -381,7 +381,7 @@ mcp_servers:
       ROUTING_PROVIDER: 'valhalla'
       VALHALLA_API_KEY: '${VALHALLA_API_KEY}'
       GEOCODING_PROVIDER: 'stadia'
-      STADIA_API_KEY: '${STADIA_API_KEY}'
+      STADIA_GEOCODING_API_KEY: '${STADIA_GEOCODING_API_KEY}'
       FUEL_PRICE_PROVIDER_MODE: 'live'
 ```
 
@@ -395,7 +395,7 @@ openclaw mcp add route-cost \
   --env ROUTING_PROVIDER=valhalla \
   --env VALHALLA_API_KEY="$VALHALLA_API_KEY" \
   --env GEOCODING_PROVIDER=stadia \
-  --env STADIA_API_KEY="$STADIA_API_KEY" \
+  --env STADIA_GEOCODING_API_KEY="$STADIA_GEOCODING_API_KEY" \
   --env FUEL_PRICE_PROVIDER_MODE=live
 openclaw mcp doctor route-cost --probe
 ```

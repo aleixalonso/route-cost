@@ -27,6 +27,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "prepack": "tsup",
     "dev": "tsup --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

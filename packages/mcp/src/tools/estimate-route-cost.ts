@@ -75,23 +75,33 @@ type Args = {
   fuelPrice?: { amountPerLitre: number; currency: string } | undefined;
 };
 
+export function refusalMessage(config: McpConfig): string | undefined {
+  const problems: string[] = [];
+  if (config.ROUTING_PROVIDER !== 'valhalla')
+    problems.push(
+      `ROUTING_PROVIDER is "${config.ROUTING_PROVIDER}" instead of "valhalla".`,
+    );
+  if (config.VALHALLA_API_KEY.trim() === '')
+    problems.push('VALHALLA_API_KEY is missing or empty.');
+  if (config.GEOCODING_PROVIDER !== 'stadia')
+    problems.push(
+      `GEOCODING_PROVIDER is "${config.GEOCODING_PROVIDER}" instead of "stadia".`,
+    );
+  if (config.STADIA_GEOCODING_API_KEY.trim() === '')
+    problems.push(
+      'STADIA_GEOCODING_API_KEY is missing or empty (STADIA_API_KEY is accepted as an alias).',
+    );
+  if (problems.length === 0) return undefined;
+  return `This server refuses to estimate without real routing and geocoding providers because a mock route would be a plausible-looking lie. ${problems.join(' ')} Set the settings named above in the server environment and restart the server. Keys are never accepted as tool arguments.`;
+}
+
 export async function estimateRouteCostTool(
   args: Args,
   config: McpConfig,
   fetchImpl: typeof fetch,
 ) {
-  if (
-    config.ROUTING_PROVIDER !== 'valhalla' ||
-    config.VALHALLA_API_KEY.trim() === '' ||
-    config.GEOCODING_PROVIDER !== 'stadia' ||
-    config.STADIA_API_KEY.trim() === ''
-  ) {
-    return toolError(
-      new Error(
-        `This server refuses to estimate without real routing and geocoding providers because a mock route would be a plausible-looking lie. Required settings are ROUTING_PROVIDER=valhalla with VALHALLA_API_KEY and GEOCODING_PROVIDER=stadia with STADIA_API_KEY. Current settings are ROUTING_PROVIDER=${config.ROUTING_PROVIDER} and GEOCODING_PROVIDER=${config.GEOCODING_PROVIDER}. Keys are read from the server environment and are never accepted as tool arguments.`,
-      ),
-    );
-  }
+  const refusal = refusalMessage(config);
+  if (refusal !== undefined) return toolError(new Error(refusal));
   try {
     const vehicle = getVehicleById(args.vehicleId);
     if (vehicle === undefined)
