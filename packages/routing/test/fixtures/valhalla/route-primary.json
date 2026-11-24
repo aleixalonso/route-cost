@@ -1,0 +1,13 @@
+{
+  "trip": {
+    "summary": {
+      "length": 10,
+      "time": 600
+    },
+    "legs": [
+      {
+        "shape": "encoded-primary"
+      }
+    ]
+  }
+}

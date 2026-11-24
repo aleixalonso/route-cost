@@ -1,0 +1,21 @@
+{
+  "edges": [
+    {
+      "length": 10,
+      "speed": 40,
+      "speed_limit": null,
+      "road_class": "unclassified",
+      "use": "ferry",
+      "toll": false,
+      "unpaved": false,
+      "surface": "paved",
+      "density": 0,
+      "weighted_grade": 0,
+      "max_upward_grade": 0,
+      "max_downward_grade": 0,
+      "mean_elevation": 0,
+      "begin_shape_index": 0,
+      "end_shape_index": 20
+    }
+  ]
+}

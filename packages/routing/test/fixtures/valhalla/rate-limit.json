@@ -1,0 +1,4 @@
+{
+  "error": "Rate limit exceeded.",
+  "error_code": "rate_limited"
+}

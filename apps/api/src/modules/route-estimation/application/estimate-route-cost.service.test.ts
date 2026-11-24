@@ -47,6 +47,26 @@ describe('EstimateRouteCostService', () => {
     expect(result.routePreferences).toEqual(DEFAULT_ROUTE_PREFERENCES);
   });
 
+  it('omits the alternatives preference when the request leaves it out', async () => {
+    const calculateRoutes = vi.fn().mockResolvedValue(routes());
+    const provider: RoutingProvider = { calculateRoutes };
+    const result = await service(provider).estimate({
+      origin: request.origin,
+      destination: request.destination,
+      vehicleCategory: request.vehicleCategory,
+      consumptionProfile: request.consumptionProfile,
+      fuelPrice: request.fuelPrice,
+    });
+
+    expect(result.alternatives).toHaveLength(2);
+    expect(calculateRoutes).toHaveBeenCalledWith({
+      origin: request.origin,
+      destination: request.destination,
+      vehicleCategory: request.vehicleCategory,
+      preferences: DEFAULT_ROUTE_PREFERENCES,
+    });
+  });
+
   it('normalizes partial preferences before calling the provider', async () => {
     const calculateRoutes = vi.fn().mockResolvedValue(routes());
     const provider: RoutingProvider = { calculateRoutes };

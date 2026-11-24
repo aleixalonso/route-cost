@@ -1,0 +1,39 @@
+{
+  "type": "FeatureCollection",
+  "geocoding": {
+    "attribution": { "url": "https://stadiamaps.com/attribution/" }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "bbox": [2.169, 41.386, 2.171, 41.388],
+      "geometry": { "type": "Point", "coordinates": [2.17, 41.387] },
+      "properties": {
+        "gid": "stadia:poi:placa-catalunya",
+        "layer": "poi",
+        "name": "Plaça de Catalunya",
+        "label": "Plaça de Catalunya, Barcelona, Catalunya, España",
+        "formatted_address_line": "Plaça de Catalunya, Barcelona, Catalunya, España",
+        "country_code": "ES",
+        "country": "España",
+        "region": "Catalunya",
+        "locality": "Barcelona",
+        "postalcode": "08002",
+        "precision": "point"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.159, 41.3888] },
+      "properties": {
+        "gid": "stadia:locality:barcelona",
+        "layer": "locality",
+        "name": "Barcelona",
+        "country_code": "ES",
+        "country": "España",
+        "region": "Catalunya",
+        "precision": "centroid"
+      }
+    }
+  ]
+}

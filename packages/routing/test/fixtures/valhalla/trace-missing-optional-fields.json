@@ -1,0 +1,21 @@
+{
+  "edges": [
+    {
+      "length": 10,
+      "speed": null,
+      "speed_limit": null,
+      "road_class": null,
+      "use": null,
+      "toll": null,
+      "unpaved": null,
+      "surface": null,
+      "density": null,
+      "weighted_grade": null,
+      "max_upward_grade": null,
+      "max_downward_grade": null,
+      "mean_elevation": null,
+      "begin_shape_index": 0,
+      "end_shape_index": 20
+    }
+  ]
+}

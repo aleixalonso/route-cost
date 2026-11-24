@@ -1,13 +1,15 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { ValhallaHttpClientCore } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-http.client-core';
-import { calculateValhallaRoutes } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla-route-calculator';
-import type { ValhallaConfig } from '../apps/api/src/modules/route-estimation/infrastructure/valhalla/valhalla.types';
+import {
+  calculateValhallaRoutes,
+  type ValhallaConfig,
+  ValhallaHttpClient,
+} from '@route-cost/routing';
 import {
   summarizeRouteDistances,
   type VehicleRoutingCategory,
-} from '../packages/routing/src/index';
+} from '@route-cost/routing';
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -66,7 +68,7 @@ async function main(): Promise<void> {
   }
 }
 
-class DebuggableValhallaHttpClient extends ValhallaHttpClientCore {
+class DebuggableValhallaHttpClient extends ValhallaHttpClient {
   public constructor(
     config: ValhallaConfig,
     private readonly debug: boolean,
@@ -151,7 +153,12 @@ function parseCoordinate(value: string): {
 } {
   const [latitude, longitude] = value.split(',').map(Number);
 
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+  if (
+    latitude === undefined ||
+    !Number.isFinite(latitude) ||
+    longitude === undefined ||
+    !Number.isFinite(longitude)
+  ) {
     throw new Error(`Invalid coordinate: ${value}.`);
   }
 

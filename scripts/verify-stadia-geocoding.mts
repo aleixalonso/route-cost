@@ -1,20 +1,20 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { StadiaGeocodingConfig } from '../apps/api/src/modules/locations/infrastructure/stadia/stadia-geocoding.types';
-import { StadiaGeocodingHttpClientCore } from '../apps/api/src/modules/locations/infrastructure/stadia/stadia-geocoding-http.client-core';
+import type { StadiaGeocodingConfig } from '@route-cost/geocoding';
+import { StadiaGeocodingHttpClient } from '@route-cost/geocoding';
 import {
   normalizeAutocompleteResponse,
   normalizePlaceDetailsResponse,
   normalizeReverseResponse,
   normalizeSearchResponse,
-} from '../apps/api/src/modules/locations/infrastructure/stadia/stadia-geocoding-normalizer';
+} from '@route-cost/geocoding';
 import {
   buildAutocompleteUrl,
   buildPlaceDetailsUrl,
   buildReverseUrl,
   buildSearchUrl,
-} from '../apps/api/src/modules/locations/infrastructure/stadia/stadia-geocoding-request.builder';
+} from '@route-cost/geocoding';
 
 type Operation = 'autocomplete' | 'search' | 'details' | 'reverse';
 
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
     defaultLimit: Number(process.env.STADIA_GEOCODING_DEFAULT_LIMIT ?? 5),
     maxLimit: Number(process.env.STADIA_GEOCODING_MAX_LIMIT ?? 10),
   };
-  const httpClient = new StadiaGeocodingHttpClientCore(config);
+  const httpClient = new StadiaGeocodingHttpClient(config);
 
   if (args.operation === 'autocomplete') {
     const request = {
@@ -239,7 +239,12 @@ function parseCoordinate(value: string): {
 } {
   const [latitude, longitude] = value.split(',').map(Number);
 
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+  if (
+    latitude === undefined ||
+    !Number.isFinite(latitude) ||
+    longitude === undefined ||
+    !Number.isFinite(longitude)
+  ) {
     throw new Error(`Invalid coordinate: ${value}.`);
   }
 

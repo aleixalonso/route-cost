@@ -397,3 +397,19 @@ function compareStationFuelPrice(
 
   return left.pricePerLitre.amount - right.pricePerLitre.amount;
 }
+
+export * from './fuel-price-provider-errors.js';
+export * from './spain/spain-coordinate.parser.js';
+export * from './spain/spain-fuel-price.errors.js';
+export {
+  SpainFuelPriceHttpClient,
+  type SpainFuelPriceHttpClientConfig,
+} from './spain/spain-fuel-price-http.client.js';
+export * from './spain/spain-fuel-price-normalizer.js';
+export {
+  createSpainFuelPriceProvider,
+  type SpainFuelPriceProviderConfig,
+} from './spain/spain-fuel-price-provider.js';
+export * from './spain/spain-fuel-price-source.schema.js';
+export * from './spain/spain-fuel-product.mapper.js';
+export * from './spain/spain-number.parser.js';
